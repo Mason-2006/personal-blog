@@ -45,8 +45,16 @@ for (const post of coreNotes) {
     {grouped.size > 0 ? (
       <div class="series-list">
         {[...grouped.entries()].map(([seriesKey, posts]) => (
-          <section class="series-group">
-            <h2 class="series-heading">{series[seriesKey] || seriesKey}</h2>
+          <details class="series-accordion" open>
+            <summary class="series-header">
+              <div class="series-header-left">
+                <svg class="accordion-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+                <h2 class="series-heading">{series[seriesKey] || seriesKey}</h2>
+              </div>
+              <span class="series-count">{posts.length} {t(lang, "notes.entriesCount")}</span>
+            </summary>
             <ul class="note-list">
               {posts.map((post) => (
                 <li class="note-item">
@@ -58,7 +66,7 @@ for (const post of coreNotes) {
                 </li>
               ))}
             </ul>
-          </section>
+          </details>
         ))}
       </div>
     ) : (
@@ -71,28 +79,113 @@ for (const post of coreNotes) {
   .series-list {
     display: flex;
     flex-direction: column;
-    gap: 3rem;
+    gap: 1rem;
+  }
+
+  .series-accordion {
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    transition: border-color 200ms ease;
+  }
+
+  .series-accordion:hover {
+    border-color: var(--color-accent-muted);
+  }
+
+  html:not(.dark) .series-accordion {
+    border-color: var(--color-light-border);
+  }
+
+  html:not(.dark) .series-accordion:hover {
+    border-color: var(--color-accent-muted);
+  }
+
+  .series-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    background-color: var(--color-bg-secondary);
+    transition: background-color 200ms ease;
+    list-style: none;
+    user-select: none;
+  }
+
+  .series-header::-webkit-details-marker {
+    display: none;
+  }
+
+  .series-header::marker {
+    display: none;
+    content: "";
+  }
+
+  .series-header:hover {
+    background-color: var(--color-bg-tertiary);
+  }
+
+  html:not(.dark) .series-header {
+    background-color: var(--color-light-bg-secondary);
+  }
+
+  html:not(.dark) .series-header:hover {
+    background-color: var(--color-light-bg-tertiary);
+  }
+
+  .series-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .accordion-chevron {
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+    transition: transform 200ms ease;
+  }
+
+  html:not(.dark) .accordion-chevron {
+    color: var(--color-light-text-muted);
+  }
+
+  .series-accordion[open] .accordion-chevron {
+    transform: rotate(90deg);
   }
 
   .series-heading {
     font-family: var(--font-display);
-    font-size: 1.2rem;
+    font-size: 1.15rem;
     font-weight: 500;
     color: var(--color-text-primary);
-    margin-bottom: 1rem;
-    padding-bottom: 0.4rem;
-    border-bottom: 1px solid var(--color-border);
+    margin: 0;
+    letter-spacing: 0.01em;
   }
 
   html:not(.dark) .series-heading {
     color: var(--color-light-text-primary);
-    border-bottom-color: var(--color-light-border);
+  }
+
+  .series-count {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+  }
+
+  html:not(.dark) .series-count {
+    color: var(--color-light-text-muted);
   }
 
   .note-list {
     list-style: none;
-    padding: 0;
+    padding: 0.5rem 1.25rem 1rem;
     margin: 0;
+    border-top: 1px solid var(--color-border);
+  }
+
+  html:not(.dark) .note-list {
+    border-top-color: var(--color-light-border);
   }
 
   .note-item {
