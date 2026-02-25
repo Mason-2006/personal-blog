@@ -1,0 +1,66 @@
+---
+import { ViewTransitions } from "astro:transitions";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import SEO from "../components/SEO.astro";
+import "../styles/global.css";
+import type { Lang } from "../i18n/translations";
+import { defaultLang } from "../i18n/translations";
+import { getLangFromUrl } from "../i18n/utils";
+
+interface Props {
+  title: string;
+  description: string;
+  image?: string;
+  article?: boolean;
+  publishedTime?: Date;
+  modifiedTime?: Date;
+  tags?: string[];
+  lang?: Lang;
+}
+
+const { title, description, image, article, publishedTime, modifiedTime, tags } = Astro.props;
+const lang = Astro.props.lang || getLangFromUrl(Astro.url);
+const htmlLang = lang === "zh" ? "zh-CN" : "en";
+---
+
+<!doctype html>
+<html lang={htmlLang} class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,500;0,600;1,400;1,500&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <SEO
+      title={title}
+      description={description}
+      image={image}
+      article={article}
+      publishedTime={publishedTime}
+      modifiedTime={modifiedTime}
+      tags={tags}
+      lang={lang}
+    />
+    <ViewTransitions />
+    <script is:inline>
+      (function() {
+        const theme = localStorage.getItem("theme") || 
+          (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        if (theme === "dark") {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+      })();
+    </script>
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <Header lang={lang} />
+    <main class="flex-1">
+      <slot />
+    </main>
+    <Footer lang={lang} />
+  </body>
+</html>

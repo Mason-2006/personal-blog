@@ -1,0 +1,149 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import type { Lang } from "../../../i18n/translations";
+import { seriesNames } from "../../../i18n/translations";
+import { t, formatDate } from "../../../i18n/utils";
+
+export function getStaticPaths() {
+  return [{ params: { lang: "zh" } }, { params: { lang: "en" } }];
+}
+
+const lang = Astro.params.lang as Lang;
+
+const allPosts = await getCollection("blog", ({ data }) => !data.draft);
+const coreNotes = allPosts
+  .filter((p) => p.data.type === "core")
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+const series = seriesNames[lang];
+
+// Group by series
+const grouped = new Map<string, typeof coreNotes>();
+for (const post of coreNotes) {
+  const key = post.data.series || "Uncategorised";
+  if (!grouped.has(key)) grouped.set(key, []);
+  grouped.get(key)!.push(post);
+}
+---
+
+<BaseLayout
+  title={t(lang, "notes.title")}
+  description={t(lang, "notes.subtitle")}
+  lang={lang}
+>
+  <section class="container-narrow py-12 md:py-16">
+    <header class="mb-12">
+      <h1 class="text-3xl md:text-4xl mb-3" style="font-family: var(--font-display); font-weight: 500; color: var(--color-text-primary);">
+        {t(lang, "notes.title")}
+      </h1>
+      <p class="text-[var(--color-text-secondary)]" style="max-width: 50ch;">
+        {t(lang, "notes.subtitle")}
+      </p>
+    </header>
+
+    {grouped.size > 0 ? (
+      <div class="series-list">
+        {[...grouped.entries()].map(([seriesKey, posts]) => (
+          <section class="series-group">
+            <h2 class="series-heading">{series[seriesKey] || seriesKey}</h2>
+            <ul class="note-list">
+              {posts.map((post) => (
+                <li class="note-item">
+                  <a href={`/${lang}/posts/${post.id}`} class="note-link">
+                    <span class="note-id">{post.data.noteId || ""}</span>
+                    <span class="note-title">{post.data.title}</span>
+                    <span class="note-date">{formatDate(post.data.pubDate, lang)}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+    ) : (
+      <p class="text-[var(--color-text-muted)]">{t(lang, "posts.noCorePosts")}</p>
+    )}
+  </section>
+</BaseLayout>
+
+<style>
+  .series-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+  }
+
+  .series-heading {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  html:not(.dark) .series-heading {
+    color: var(--color-light-text-primary);
+    border-bottom-color: var(--color-light-border);
+  }
+
+  .note-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .note-item {
+    margin-bottom: 0;
+  }
+
+  .note-link {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    text-decoration: none;
+    color: var(--color-text-secondary);
+    transition: color 200ms ease;
+  }
+
+  .note-link:hover {
+    color: var(--color-accent);
+  }
+
+  html:not(.dark) .note-link {
+    color: var(--color-light-text-secondary);
+  }
+
+  html:not(.dark) .note-link:hover {
+    color: var(--color-accent);
+  }
+
+  .note-id {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    min-width: 5ch;
+    flex-shrink: 0;
+  }
+
+  html:not(.dark) .note-id {
+    color: var(--color-light-text-muted);
+  }
+
+  .note-title {
+    flex: 1;
+  }
+
+  .note-date {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+  }
+
+  html:not(.dark) .note-date {
+    color: var(--color-light-text-muted);
+  }
+</style>

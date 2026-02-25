@@ -1,0 +1,144 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import type { Lang } from "../../../i18n/translations";
+import { categoryNames } from "../../../i18n/translations";
+import { t, formatDate } from "../../../i18n/utils";
+
+export function getStaticPaths() {
+  return [{ params: { lang: "zh" } }, { params: { lang: "en" } }];
+}
+
+const lang = Astro.params.lang as Lang;
+
+const allPosts = await getCollection("blog", ({ data }) => !data.draft);
+const marginalia = allPosts
+  .filter((p) => p.data.type === "marginalia")
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+const categories = categoryNames[lang];
+---
+
+<BaseLayout
+  title={t(lang, "marginalia.title")}
+  description={t(lang, "marginalia.subtitle")}
+  lang={lang}
+>
+  <section class="container-narrow py-12 md:py-16">
+    <header class="mb-12">
+      <h1 class="text-3xl md:text-4xl mb-3" style="font-family: var(--font-display); font-weight: 500; color: var(--color-text-primary);">
+        {t(lang, "marginalia.title")}
+      </h1>
+      <p class="text-[var(--color-text-secondary)]" style="max-width: 50ch;">
+        {t(lang, "marginalia.subtitle")}
+      </p>
+    </header>
+
+    {marginalia.length > 0 ? (
+      <div class="post-list">
+        {marginalia.map((post) => {
+          const catLabel = post.data.category ? categories[post.data.category] || post.data.category : null;
+          return (
+            <article class="post-item">
+              <div class="post-meta">
+                <time datetime={post.data.pubDate.toISOString()}>
+                  {formatDate(post.data.pubDate, lang)}
+                </time>
+                {catLabel && (
+                  <span class="post-cat">{catLabel}</span>
+                )}
+              </div>
+              <h2 class="post-title">
+                <a href={`/${lang}/posts/${post.id}`}>{post.data.title}</a>
+              </h2>
+              <p class="post-desc">{post.data.description}</p>
+            </article>
+          );
+        })}
+      </div>
+    ) : (
+      <p class="text-[var(--color-text-muted)]">{t(lang, "posts.noMarginalia")}</p>
+    )}
+  </section>
+</BaseLayout>
+
+<style>
+  .post-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  .post-item {
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .post-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  html:not(.dark) .post-item {
+    border-bottom-color: var(--color-light-border);
+  }
+
+  .post-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+  }
+
+  html:not(.dark) .post-meta {
+    color: var(--color-light-text-muted);
+  }
+
+  .post-cat {
+    font-style: italic;
+  }
+
+  .post-cat::before {
+    content: " · ";
+    font-style: normal;
+  }
+
+  .post-title {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 500;
+    line-height: 1.35;
+    margin-bottom: 0.35rem;
+  }
+
+  .post-title a {
+    color: var(--color-text-primary);
+    text-decoration: none;
+    transition: color 200ms ease;
+  }
+
+  .post-title a:hover {
+    color: var(--color-accent);
+  }
+
+  html:not(.dark) .post-title a {
+    color: var(--color-light-text-primary);
+  }
+
+  html:not(.dark) .post-title a:hover {
+    color: var(--color-accent);
+  }
+
+  .post-desc {
+    color: var(--color-text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    max-width: 60ch;
+  }
+
+  html:not(.dark) .post-desc {
+    color: var(--color-light-text-secondary);
+  }
+</style>

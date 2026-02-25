@@ -1,0 +1,29 @@
+---
+interface Props {
+  type: 'goals' | 'notation' | 'definition' | 'theorem' | 'lemma' | 'proposition' | 'proof' | 'remark' | 'example' | 'exercise';
+  title?: string;
+}
+
+const { type, title } = Astro.props;
+
+const typeConfig: Record<string, { label: string; class: string }> = {
+  goals: { label: 'Goals', class: '' },
+  notation: { label: 'Notation', class: '' },
+  definition: { label: 'Definition', class: 'definition' },
+  theorem: { label: 'Theorem', class: 'theorem' },
+  lemma: { label: 'Lemma', class: 'theorem' },
+  proposition: { label: 'Proposition', class: 'theorem' },
+  proof: { label: 'Proof', class: 'proof' },
+  remark: { label: 'Remark', class: 'remark' },
+  example: { label: 'Example', class: 'remark' },
+  exercise: { label: 'Exercise', class: '' },
+};
+
+const config = typeConfig[type] || { label: type, class: '' };
+const displayTitle = title ? `${config.label}: ${title}` : config.label;
+---
+
+<div class={`note-section ${config.class}`}>
+  <div class="note-section-title">{displayTitle}</div>
+  <slot />
+</div>

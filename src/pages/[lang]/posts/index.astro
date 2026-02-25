@@ -1,0 +1,145 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import type { Lang } from "../../../i18n/translations";
+import { seriesNames, categoryNames } from "../../../i18n/translations";
+import { t, formatDate } from "../../../i18n/utils";
+
+export function getStaticPaths() {
+  return [{ params: { lang: "zh" } }, { params: { lang: "en" } }];
+}
+
+const lang = Astro.params.lang as Lang;
+
+const allPosts = await getCollection("blog", ({ data }) => !data.draft);
+const sortedPosts = allPosts.sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
+
+const series = seriesNames[lang];
+const categories = categoryNames[lang];
+---
+
+<BaseLayout
+  title={t(lang, "posts.title")}
+  description={t(lang, "site.description")}
+  lang={lang}
+>
+  <section class="container-narrow py-12 md:py-16">
+    <header class="mb-12">
+      <h1 class="text-3xl md:text-4xl mb-3" style="font-family: var(--font-display); font-weight: 500; color: var(--color-text-primary);">
+        {t(lang, "posts.title")}
+      </h1>
+      <p class="text-[var(--color-text-secondary)]">
+        {sortedPosts.length} {t(lang, "posts.entries")}
+      </p>
+    </header>
+
+    <div class="post-list">
+      {sortedPosts.map((post) => {
+        const seriesLabel = post.data.series ? series[post.data.series] || post.data.series : null;
+        const catLabel = post.data.type === "marginalia" && post.data.category
+          ? categories[post.data.category] || post.data.category
+          : null;
+        const secondaryLabel = seriesLabel || catLabel || (post.data.type === "marginalia" ? t(lang, "nav.marginalia") : null);
+        return (
+          <article class="post-item">
+            <div class="post-meta">
+              <time datetime={post.data.pubDate.toISOString()}>
+                {formatDate(post.data.pubDate, lang)}
+              </time>
+              {secondaryLabel && (
+                <span class="post-label">{secondaryLabel}</span>
+              )}
+            </div>
+            <h2 class="post-title">
+              <a href={`/${lang}/posts/${post.id}`}>{post.data.title}</a>
+            </h2>
+            <p class="post-desc">{post.data.description}</p>
+          </article>
+        );
+      })}
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .post-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  .post-item {
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .post-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  html:not(.dark) .post-item {
+    border-bottom-color: var(--color-light-border);
+  }
+
+  .post-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+  }
+
+  html:not(.dark) .post-meta {
+    color: var(--color-light-text-muted);
+  }
+
+  .post-label {
+    font-style: italic;
+  }
+
+  .post-label::before {
+    content: " · ";
+    font-style: normal;
+  }
+
+  .post-title {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 500;
+    line-height: 1.35;
+    margin-bottom: 0.35rem;
+  }
+
+  .post-title a {
+    color: var(--color-text-primary);
+    text-decoration: none;
+    transition: color 200ms ease;
+  }
+
+  .post-title a:hover {
+    color: var(--color-accent);
+  }
+
+  html:not(.dark) .post-title a {
+    color: var(--color-light-text-primary);
+  }
+
+  html:not(.dark) .post-title a:hover {
+    color: var(--color-accent);
+  }
+
+  .post-desc {
+    color: var(--color-text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    max-width: 60ch;
+  }
+
+  html:not(.dark) .post-desc {
+    color: var(--color-light-text-secondary);
+  }
+</style>

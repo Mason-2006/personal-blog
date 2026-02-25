@@ -1,0 +1,342 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-bg-primary: #1a1814;
+  --color-bg-secondary: #242018;
+  --color-bg-tertiary: #2e2a22;
+  --color-border: #3d382e;
+  --color-text-primary: #e8e4dc;
+  --color-text-secondary: #c4bfb4;
+  --color-text-muted: #8a8478;
+  --color-accent: #9b7b5b;
+  --color-accent-hover: #b8956f;
+  --color-accent-muted: #6b5a47;
+  
+  --color-light-bg-primary: #faf8f5;
+  --color-light-bg-secondary: #f0ede8;
+  --color-light-bg-tertiary: #e5e1da;
+  --color-light-border: #d4cfc4;
+  --color-light-text-primary: #2c2820;
+  --color-light-text-secondary: #4a453c;
+  --color-light-text-muted: #7a7468;
+  
+  --font-serif: 'Crimson Pro', 'EB Garamond', 'Georgia', 'Times New Roman', serif;
+  --font-display: 'EB Garamond', 'Crimson Pro', 'Georgia', serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  
+  --spacing-prose: 68ch;
+  
+  --transition-base: 200ms ease;
+  --transition-slow: 400ms ease;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 18px;
+}
+
+body {
+  font-family: var(--font-serif);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  line-height: 1.8;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  transition: background-color var(--transition-base), color var(--transition-base);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+html:not(.dark) body {
+  background-color: var(--color-light-bg-primary);
+  color: var(--color-light-text-primary);
+}
+
+::selection {
+  background-color: var(--color-accent);
+  color: var(--color-bg-primary);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+pre {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  padding: 1.25rem;
+  border-radius: 0.25rem;
+  overflow-x: auto;
+  background-color: var(--color-bg-secondary) !important;
+  border: 1px solid var(--color-border);
+}
+
+code {
+  font-family: var(--font-mono);
+}
+
+:not(pre) > code {
+  background-color: var(--color-bg-tertiary);
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.2rem;
+  font-size: 0.85em;
+}
+
+html:not(.dark) :not(pre) > code {
+  background-color: var(--color-light-bg-tertiary);
+}
+
+.prose {
+  max-width: var(--spacing-prose);
+  color: var(--color-text-secondary);
+  font-family: var(--font-serif);
+  line-height: 1.8;
+}
+
+html:not(.dark) .prose {
+  color: var(--color-light-text-secondary);
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  font-family: var(--font-display);
+  color: var(--color-text-primary);
+  font-weight: 500;
+  line-height: 1.3;
+  margin-top: 2.5em;
+  margin-bottom: 0.6em;
+  letter-spacing: 0.02em;
+}
+
+html:not(.dark) .prose h1,
+html:not(.dark) .prose h2,
+html:not(.dark) .prose h3,
+html:not(.dark) .prose h4 {
+  color: var(--color-light-text-primary);
+}
+
+.prose h1 {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.prose h2 {
+  font-size: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 0.4rem;
+}
+
+html:not(.dark) .prose h2 {
+  border-bottom-color: var(--color-light-border);
+}
+
+.prose h3 {
+  font-size: 1.25rem;
+  font-style: italic;
+}
+
+.prose p {
+  margin-bottom: 1.6em;
+  text-align: justify;
+  hyphens: auto;
+}
+
+.prose a {
+  color: var(--color-accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-accent-muted);
+  transition: border-color var(--transition-base), color var(--transition-base);
+}
+
+.prose a:hover {
+  color: var(--color-accent-hover);
+  border-bottom-color: var(--color-accent-hover);
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.5em;
+  margin-bottom: 1.6em;
+}
+
+.prose li {
+  margin-bottom: 0.5em;
+}
+
+.prose blockquote {
+  border-left: 2px solid var(--color-accent-muted);
+  padding-left: 1.25rem;
+  margin: 2em 0;
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+html:not(.dark) .prose blockquote {
+  color: var(--color-light-text-muted);
+}
+
+.prose img {
+  border-radius: 0.25rem;
+  margin: 2em auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.prose hr {
+  border: none;
+  text-align: center;
+  margin: 3em 0;
+}
+
+.prose hr::before {
+  content: '§';
+  color: var(--color-text-muted);
+  font-size: 1.25rem;
+}
+
+/* MathJax: Fix Tailwind v4 preflight setting svg { display: block }
+   which breaks inline math by making SVGs full-width block elements */
+mjx-container:not([display="true"]) {
+  display: inline !important;
+}
+
+mjx-container:not([display="true"]) svg {
+  display: inline !important;
+}
+
+/* Display math: centered block with overflow scroll */
+mjx-container[display="true"] {
+  display: block !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: 1.5em 0;
+  text-align: center;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.link-hover {
+  position: relative;
+}
+
+.link-hover::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background-color: var(--color-accent);
+  transition: width var(--transition-base);
+}
+
+.link-hover:hover::after {
+  width: 100%;
+}
+
+
+.container-narrow {
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.container-wide {
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.note-section {
+  margin: 2.5em 0;
+  padding: 1.25em 1.5em;
+  background-color: var(--color-bg-secondary);
+  border-left: 3px solid var(--color-accent-muted);
+  border-radius: 0 0.25rem 0.25rem 0;
+}
+
+html:not(.dark) .note-section {
+  background-color: var(--color-light-bg-secondary);
+}
+
+.note-section-title {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-accent);
+  margin-bottom: 0.75em;
+}
+
+.note-section p:last-child {
+  margin-bottom: 0;
+}
+
+.definition {
+  border-left-color: #5b7b9b;
+}
+
+.definition .note-section-title {
+  color: #5b7b9b;
+}
+
+.theorem {
+  border-left-color: #7b5b9b;
+}
+
+.theorem .note-section-title {
+  color: #7b5b9b;
+}
+
+.proof {
+  border-left-color: var(--color-text-muted);
+  background-color: transparent;
+  font-style: italic;
+}
+
+.proof .note-section-title {
+  color: var(--color-text-muted);
+  font-style: normal;
+}
+
+.proof::after {
+  content: '∎';
+  display: block;
+  text-align: right;
+  color: var(--color-text-muted);
+  margin-top: 0.5em;
+}
+
+.remark {
+  border-left-color: #9b9b5b;
+}
+
+.remark .note-section-title {
+  color: #9b9b5b;
+}

@@ -1,0 +1,175 @@
+---
+title: "Fundamentals of Differential Calculus"
+description: "An introduction to limits, derivatives, and the fundamental theorem of calculus, presented in the classical mathematical style."
+pubDate: 2026-02-24
+author: "Author"
+tags: ["Mathematics", "Calculus", "Analysis"]
+type: "core"
+series: "CA"
+noteId: "CA-001"
+lang: "en"
+---
+
+import NoteSection from '../components/NoteSection.astro';
+
+<NoteSection type="goals">
+
+In this note, we establish the foundational concepts of differential calculus:
+
+1. The formal definition of a limit
+2. The derivative as a limit of difference quotients
+3. Basic differentiation rules
+4. The connection between derivatives and tangent lines
+
+</NoteSection>
+
+<NoteSection type="notation">
+
+Throughout this note, we adopt the following conventions:
+
+- $\mathbb{R}$ denotes the set of real numbers
+- $f: A \to B$ indicates a function from set $A$ to set $B$
+- $\lim_{x \to a} f(x) = L$ means the limit of $f(x)$ as $x$ approaches $a$ equals $L$
+- $f'(x)$ or $\frac{df}{dx}$ denotes the derivative of $f$ with respect to $x$
+
+</NoteSection>
+
+## The Concept of a Limit
+
+<NoteSection type="definition" title="Limit of a Function">
+
+Let $f$ be a function defined on some open interval containing $a$, except possibly at $a$ itself. We say that the **limit of $f(x)$ as $x$ approaches $a$ is $L$**, written
+
+$$
+\lim_{x \to a} f(x) = L
+$$
+
+if for every $\varepsilon > 0$ there exists a $\delta > 0$ such that
+
+$$
+0 < |x - a| < \delta \implies |f(x) - L| < \varepsilon
+$$
+
+</NoteSection>
+
+<NoteSection type="remark">
+
+The $\varepsilon$-$\delta$ definition captures the intuitive notion that $f(x)$ can be made arbitrarily close to $L$ by taking $x$ sufficiently close to (but not equal to) $a$. This formalization, due to Weierstrass, provides the rigorous foundation for all of calculus.
+
+</NoteSection>
+
+## The Derivative
+
+<NoteSection type="definition" title="Derivative at a Point">
+
+The **derivative** of a function $f$ at a point $a$, denoted $f'(a)$, is defined as
+
+$$
+f'(a) = \lim_{h \to 0} \frac{f(a + h) - f(a)}{h}
+$$
+
+provided this limit exists. When it exists, we say $f$ is **differentiable** at $a$.
+
+</NoteSection>
+
+<NoteSection type="theorem" title="Power Rule">
+
+For any real number $n$ and function $f(x) = x^n$, we have
+
+$$
+\frac{d}{dx}(x^n) = nx^{n-1}
+$$
+
+</NoteSection>
+
+<NoteSection type="proof">
+
+Using the definition of derivative:
+
+$$
+\frac{d}{dx}(x^n) = \lim_{h \to 0} \frac{(x+h)^n - x^n}{h}
+$$
+
+Expanding $(x+h)^n$ using the binomial theorem:
+
+$$
+(x+h)^n = x^n + nx^{n-1}h + \binom{n}{2}x^{n-2}h^2 + \cdots + h^n
+$$
+
+Therefore:
+
+$$
+\frac{(x+h)^n - x^n}{h} = nx^{n-1} + \binom{n}{2}x^{n-2}h + \cdots + h^{n-1}
+$$
+
+Taking the limit as $h \to 0$, all terms containing $h$ vanish, leaving $nx^{n-1}$.
+
+</NoteSection>
+
+## Differentiation Rules
+
+<NoteSection type="theorem" title="Sum and Product Rules">
+
+Let $f$ and $g$ be differentiable functions. Then:
+
+**Sum Rule:**
+$$
+(f + g)'(x) = f'(x) + g'(x)
+$$
+
+**Product Rule:**
+$$
+(fg)'(x) = f'(x)g(x) + f(x)g'(x)
+$$
+
+</NoteSection>
+
+<NoteSection type="example">
+
+Consider $f(x) = x^3 + 2x^2 - 5x + 7$. By the sum rule and power rule:
+
+$$
+f'(x) = 3x^2 + 4x - 5
+$$
+
+For $g(x) = x^2 \sin(x)$, by the product rule:
+
+$$
+g'(x) = 2x \sin(x) + x^2 \cos(x)
+$$
+
+</NoteSection>
+
+## The Chain Rule
+
+<NoteSection type="theorem" title="Chain Rule">
+
+If $g$ is differentiable at $x$ and $f$ is differentiable at $g(x)$, then the composite function $f \circ g$ is differentiable at $x$, and
+
+$$
+(f \circ g)'(x) = f'(g(x)) \cdot g'(x)
+$$
+
+In Leibniz notation, if $y = f(u)$ and $u = g(x)$, then
+
+$$
+\frac{dy}{dx} = \frac{dy}{du} \cdot \frac{du}{dx}
+$$
+
+</NoteSection>
+
+<NoteSection type="remark">
+
+The chain rule is perhaps the most important differentiation technique, as it allows us to differentiate composite functions. It also provides the foundation for implicit differentiation and related rates problems.
+
+</NoteSection>
+
+---
+
+## Further Reading
+
+These notes cover only the basics. For a rigorous treatment, consult:
+
+- Rudin, W. *Principles of Mathematical Analysis* (1976)
+- Spivak, M. *Calculus* (2008)
+- Apostol, T. *Calculus, Vol. 1* (1967)

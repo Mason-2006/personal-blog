@@ -1,0 +1,73 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import type { Lang } from "../../i18n/translations";
+import { t } from "../../i18n/utils";
+
+export function getStaticPaths() {
+  return [{ params: { lang: "zh" } }, { params: { lang: "en" } }];
+}
+
+const lang = Astro.params.lang as Lang;
+---
+
+<BaseLayout
+  title={t(lang, "about.title")}
+  description={t(lang, "about.description")}
+  lang={lang}
+>
+  <section class="container-narrow py-12 md:py-16">
+    <div class="prose max-w-none">
+      <h1>{t(lang, "about.title")}</h1>
+
+      <p>
+        {t(lang, "about.intro")} <strong>{t(lang, "about.name")}</strong>，{t(lang, "about.identity")}
+      </p>
+
+      <blockquote>
+        <p>"{t(lang, "about.motto")}"</p>
+      </blockquote>
+
+      <h2>{t(lang, "about.site.title")}</h2>
+
+      <p>
+        {t(lang, "about.site.desc")}
+        <em>{t(lang, "about.site.core")}</em>，{t(lang, "about.site.core.desc")}
+        <em>{t(lang, "about.site.marginalia")}</em>，{t(lang, "about.site.marginalia.desc")}
+      </p>
+
+      <h2>{t(lang, "about.current.title")}</h2>
+
+      <p>{t(lang, "about.current.desc")}</p>
+
+      <h2>{t(lang, "about.interests.title")}</h2>
+
+      <ul>
+        <li>{t(lang, "about.interests.math")}</li>
+        <li>{t(lang, "about.interests.cs")}</li>
+        <li>{t(lang, "about.interests.phil")}</li>
+        <li>{t(lang, "about.interests.calligraphy")}</li>
+      </ul>
+
+      <h2>{t(lang, "about.tech.title")}</h2>
+
+      <p>
+        {lang === "zh" ? (
+          <>
+            本站使用 <a href="https://astro.build" target="_blank" rel="noopener">Astro</a> 和 <a href="https://tailwindcss.com" target="_blank" rel="noopener">Tailwind CSS</a> 构建。数学公式通过 KaTeX 在构建时渲染 — 浏览器端无需加载 JavaScript。文章使用 MDX 编写。
+          </>
+        ) : (
+          <>
+            Built with <a href="https://astro.build" target="_blank" rel="noopener">Astro</a> and <a href="https://tailwindcss.com" target="_blank" rel="noopener">Tailwind CSS</a>. Mathematics is rendered with KaTeX at build time — no client-side JavaScript is required to display formulae. Articles are written in MDX.
+          </>
+        )}
+      </p>
+
+      <h2>{t(lang, "about.contact.title")}</h2>
+
+      <ul>
+        <li>GitHub: <a href="https://github.com/Mason-2006" target="_blank" rel="noopener">@Mason-2006</a></li>
+        <li>Email: <a href="mailto:mooringbridge@gmail.com">mooringbridge@gmail.com</a></li>
+      </ul>
+    </div>
+  </section>
+</BaseLayout>

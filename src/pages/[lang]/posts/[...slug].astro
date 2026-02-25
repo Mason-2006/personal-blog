@@ -1,0 +1,36 @@
+---
+import { getCollection, render } from "astro:content";
+import PostLayout from "../../../layouts/PostLayout.astro";
+import type { Lang } from "../../../i18n/translations";
+
+export async function getStaticPaths() {
+  const posts = await getCollection("blog", ({ data }) => !data.draft);
+  const langs = ["zh", "en"] as const;
+  return langs.flatMap((lang) =>
+    posts.map((post) => ({
+      params: { lang, slug: post.id },
+      props: { post, lang },
+    }))
+  );
+}
+
+const { post, lang } = Astro.props;
+const { Content } = await render(post);
+---
+
+<PostLayout
+  title={post.data.title}
+  description={post.data.description}
+  pubDate={post.data.pubDate}
+  updatedDate={post.data.updatedDate}
+  author={post.data.author}
+  tags={post.data.tags}
+  image={post.data.image}
+  type={post.data.type}
+  series={post.data.series}
+  noteId={post.data.noteId}
+  category={post.data.category}
+  lang={lang as Lang}
+>
+  <Content />
+</PostLayout>

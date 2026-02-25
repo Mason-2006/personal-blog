@@ -1,0 +1,237 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import type { Lang } from "../../i18n/translations";
+import { seriesNames } from "../../i18n/translations";
+import { t, formatDayMonth, getMonthName } from "../../i18n/utils";
+
+export function getStaticPaths() {
+  return [{ params: { lang: "zh" } }, { params: { lang: "en" } }];
+}
+
+const lang = Astro.params.lang as Lang;
+
+const allPosts = await getCollection("blog", ({ data }) => !data.draft);
+const sortedPosts = allPosts.sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
+
+// Group posts by year → month
+type PostEntry = (typeof sortedPosts)[number];
+const grouped = new Map<number, Map<string, PostEntry[]>>();
+
+for (const post of sortedPosts) {
+  const year = post.data.pubDate.getFullYear();
+  const month = getMonthName(post.data.pubDate, lang);
+
+  if (!grouped.has(year)) grouped.set(year, new Map());
+  const yearMap = grouped.get(year)!;
+  if (!yearMap.has(month)) yearMap.set(month, []);
+  yearMap.get(month)!.push(post);
+}
+
+const series = seriesNames[lang];
+---
+
+<BaseLayout
+  title={t(lang, "home.title")}
+  description={t(lang, "home.subtitle")}
+  lang={lang}
+>
+  <section class="container-narrow py-12 md:py-16">
+    <header class="mb-12">
+      <h1 class="text-3xl md:text-4xl font-display text-[var(--color-text-primary)] mb-3" style="font-family: var(--font-display); font-weight: 500;">
+        {t(lang, "home.title")}
+      </h1>
+      <p class="text-[var(--color-text-secondary)]" style="max-width: 50ch;">
+        {t(lang, "home.subtitle")}
+      </p>
+    </header>
+
+    {grouped.size > 0 ? (
+      <div class="timeline">
+        {[...grouped.entries()].map(([year, months]) => (
+          <section class="year-group">
+            <h2 class="year-heading">{year}</h2>
+            {[...months.entries()].map(([month, posts]) => (
+              <div class="month-group">
+                <h3 class="month-heading">{month}</h3>
+                <div class="post-list">
+                  {posts.map((post) => {
+                    const seriesLabel = post.data.series ? series[post.data.series] || post.data.series : null;
+                    const typeLabel = post.data.type === "marginalia" ? t(lang, "nav.marginalia") : null;
+                    return (
+                      <article class="post-item">
+                        <div class="post-meta">
+                          <time datetime={post.data.pubDate.toISOString()}>
+                            {formatDayMonth(post.data.pubDate, lang)}
+                          </time>
+                          {seriesLabel && (
+                            <span class="post-series">{seriesLabel}</span>
+                          )}
+                          {typeLabel && !seriesLabel && (
+                            <span class="post-series">{typeLabel}</span>
+                          )}
+                          {post.data.lang !== lang && (
+                            <span class="post-lang">{post.data.lang.toUpperCase()}</span>
+                          )}
+                        </div>
+                        <h4 class="post-title">
+                          <a href={`/${lang}/posts/${post.id}`}>{post.data.title}</a>
+                        </h4>
+                        <p class="post-desc">{post.data.description}</p>
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </section>
+        ))}
+      </div>
+    ) : (
+      <p class="text-[var(--color-text-muted)]">{t(lang, "posts.noPosts")}</p>
+    )}
+  </section>
+</BaseLayout>
+
+<style>
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+  }
+
+  .year-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .year-heading {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.02em;
+  }
+
+  html:not(.dark) .year-heading {
+    color: var(--color-light-text-primary);
+  }
+
+  .month-group {
+    margin-bottom: 2rem;
+  }
+
+  .month-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .month-heading {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 500;
+    font-style: italic;
+    color: var(--color-text-secondary);
+    margin-bottom: 1rem;
+    padding-left: 0.5rem;
+    border-left: 2px solid var(--color-accent-muted);
+  }
+
+  html:not(.dark) .month-heading {
+    color: var(--color-light-text-secondary);
+  }
+
+  .post-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding-left: 1rem;
+  }
+
+  .post-item {
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .post-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  html:not(.dark) .post-item {
+    border-bottom-color: var(--color-light-border);
+  }
+
+  .post-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+  }
+
+  html:not(.dark) .post-meta {
+    color: var(--color-light-text-muted);
+  }
+
+  .post-series {
+    font-style: italic;
+  }
+
+  .post-series::before {
+    content: " · ";
+    font-style: normal;
+  }
+
+  .post-lang {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    padding: 0.1rem 0.35rem;
+    border-radius: 0.2rem;
+    background-color: var(--color-bg-tertiary);
+  }
+
+  html:not(.dark) .post-lang {
+    background-color: var(--color-light-bg-tertiary);
+  }
+
+  .post-title {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 500;
+    line-height: 1.35;
+    margin-bottom: 0.35rem;
+  }
+
+  .post-title a {
+    color: var(--color-text-primary);
+    text-decoration: none;
+    transition: color 200ms ease;
+  }
+
+  .post-title a:hover {
+    color: var(--color-accent);
+  }
+
+  html:not(.dark) .post-title a {
+    color: var(--color-light-text-primary);
+  }
+
+  html:not(.dark) .post-title a:hover {
+    color: var(--color-accent);
+  }
+
+  .post-desc {
+    color: var(--color-text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    max-width: 60ch;
+  }
+
+  html:not(.dark) .post-desc {
+    color: var(--color-light-text-secondary);
+  }
+</style>

@@ -1,0 +1,99 @@
+---
+title: "Sequences and Convergence in the Real Numbers"
+description: "Definitions and basic properties of convergent sequences, Cauchy sequences, and the completeness of the reals."
+pubDate: 2026-02-22
+author: "Author"
+tags: ["Mathematics", "Real Analysis"]
+type: "core"
+series: "RA"
+noteId: "RA-001"
+lang: "en"
+---
+
+import NoteSection from '../components/NoteSection.astro';
+
+<NoteSection type="goals">
+
+We introduce the notion of convergence for real sequences, establish key properties, and state the completeness axiom.
+
+</NoteSection>
+
+<NoteSection type="notation">
+
+- $(a_n)_{n \geq 1}$ or $(a_n)$ denotes a sequence of real numbers.
+- $\mathbb{N} = \{1, 2, 3, \ldots\}$ is the set of positive integers.
+
+</NoteSection>
+
+## Convergence
+
+<NoteSection type="definition" title="Convergence of a Sequence">
+
+A sequence $(a_n)$ of real numbers **converges** to a limit $L \in \mathbb{R}$ if for every $\varepsilon > 0$ there exists $N \in \mathbb{N}$ such that
+
+$$
+n \geq N \implies |a_n - L| < \varepsilon
+$$
+
+We write $\lim_{n \to \infty} a_n = L$, or simply $a_n \to L$.
+
+</NoteSection>
+
+<NoteSection type="example">
+
+The sequence $a_n = 1/n$ converges to $0$. Given $\varepsilon > 0$, choose $N > 1/\varepsilon$ (by the Archimedean property). Then for $n \geq N$:
+
+$$
+|a_n - 0| = \frac{1}{n} \leq \frac{1}{N} < \varepsilon
+$$
+
+</NoteSection>
+
+<NoteSection type="theorem" title="Uniqueness of Limits">
+
+If $a_n \to L$ and $a_n \to M$, then $L = M$.
+
+</NoteSection>
+
+<NoteSection type="proof">
+
+Suppose $L \neq M$. Set $\varepsilon = |L - M|/2 > 0$. There exist $N_1, N_2$ such that $|a_n - L| < \varepsilon$ for $n \geq N_1$ and $|a_n - M| < \varepsilon$ for $n \geq N_2$. For $n \geq \max(N_1, N_2)$:
+
+$$
+|L - M| \leq |L - a_n| + |a_n - M| < 2\varepsilon = |L - M|
+$$
+
+This is a contradiction, so $L = M$.
+
+</NoteSection>
+
+## Cauchy Sequences
+
+<NoteSection type="definition" title="Cauchy Sequence">
+
+A sequence $(a_n)$ is **Cauchy** if for every $\varepsilon > 0$ there exists $N \in \mathbb{N}$ such that
+
+$$
+m, n \geq N \implies |a_m - a_n| < \varepsilon
+$$
+
+</NoteSection>
+
+<NoteSection type="theorem" title="Completeness of the Reals">
+
+A sequence of real numbers converges if and only if it is Cauchy.
+
+</NoteSection>
+
+<NoteSection type="remark">
+
+Completeness is what distinguishes $\mathbb{R}$ from $\mathbb{Q}$. The sequence of rational approximations to $\sqrt{2}$ is Cauchy in $\mathbb{Q}$ but does not converge in $\mathbb{Q}$. The real numbers are, by construction, the completion of the rationals.
+
+</NoteSection>
+
+---
+
+## Further Reading
+
+- Rudin, W. *Principles of Mathematical Analysis*, Chapter 3 (1976)
+- Tao, T. *Analysis I*, Chapter 6 (2016)

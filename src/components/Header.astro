@@ -1,0 +1,75 @@
+---
+import ThemeToggle from "./ThemeToggle.astro";
+import LanguageSwitcher from "./LanguageSwitcher.astro";
+import type { Lang } from "../i18n/translations";
+import { defaultLang } from "../i18n/translations";
+import { t, localizedPath, getLangFromUrl } from "../i18n/utils";
+
+interface Props {
+  lang?: Lang;
+}
+
+const lang = Astro.props.lang || getLangFromUrl(Astro.url);
+
+const navLinks = [
+  { href: localizedPath(lang, "/"), label: t(lang, "nav.home") },
+  { href: localizedPath(lang, "/notes"), label: t(lang, "nav.notes") },
+  { href: localizedPath(lang, "/marginalia"), label: t(lang, "nav.marginalia") },
+  { href: localizedPath(lang, "/about"), label: t(lang, "nav.about") },
+];
+
+const currentPath = Astro.url.pathname;
+---
+
+<header class="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg-primary)]/80 backdrop-blur-md">
+  <nav class="container-wide flex items-center justify-between h-16">
+    <a href={localizedPath(lang, "/")} class="text-lg text-[var(--color-text-primary)] hover:text-[var(--color-accent)] transition-colors" style="font-family: var(--font-display); font-weight: 500; letter-spacing: 0.02em;">
+      <span class="sr-only">Home</span>
+      <span aria-hidden="true">{t(lang, "brand")}</span>
+    </a>
+    
+    <div class="flex items-center gap-6">
+      <ul class="flex items-center gap-1">
+        {navLinks.map(({ href, label }) => {
+          const isActive = currentPath === href || (href !== localizedPath(lang, "/") && currentPath.startsWith(href));
+          return (
+            <li>
+              <a
+                href={href}
+                class:list={[
+                  "px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  isActive
+                    ? "text-[var(--color-accent)] bg-[var(--color-accent)]/10"
+                    : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-secondary)]",
+                ]}
+                aria-current={isActive ? "page" : undefined}
+              >
+                {label}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+      
+      <div class="flex items-center gap-2">
+        <LanguageSwitcher lang={lang} currentPath={currentPath} />
+        <ThemeToggle />
+      </div>
+    </div>
+  </nav>
+</header>
+
+<style>
+  html:not(.dark) header {
+    border-color: var(--color-light-border);
+    background-color: rgba(255, 255, 255, 0.8);
+  }
+  
+  html:not(.dark) nav a:first-child {
+    color: var(--color-light-text-primary);
+  }
+  
+  html:not(.dark) nav a:first-child:hover {
+    color: var(--color-accent);
+  }
+</style>
