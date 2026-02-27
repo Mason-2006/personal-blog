@@ -26,10 +26,10 @@ const categories = categoryNames[lang];
 >
   <section class="container-narrow py-12 md:py-16">
     <header class="mb-12">
-      <h1 class="text-3xl md:text-4xl mb-3" style="font-family: var(--font-display); font-weight: 500; color: var(--color-text-primary);">
+      <h1 class="page-heading text-3xl md:text-4xl mb-3">
         {t(lang, "marginalia.title")}
       </h1>
-      <p class="text-[var(--color-text-secondary)]" style="max-width: 50ch;">
+      <p class="page-subtitle" style="max-width: 50ch;">
         {t(lang, "marginalia.subtitle")}
       </p>
     </header>
@@ -139,6 +139,24 @@ const categories = categoryNames[lang];
   }
 
   html:not(.dark) .post-desc {
+    color: var(--color-light-text-secondary);
+  }
+
+  .page-heading {
+    font-family: var(--font-display);
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+
+  html:not(.dark) .page-heading {
+    color: var(--color-light-text-primary);
+  }
+
+  .page-subtitle {
+    color: var(--color-text-secondary);
+  }
+
+  html:not(.dark) .page-subtitle {
     color: var(--color-light-text-secondary);
   }
 </style>

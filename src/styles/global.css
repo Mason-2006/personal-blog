@@ -340,3 +340,28 @@ html:not(.dark) .note-section {
 .remark .note-section-title {
   color: #9b9b5b;
 }
+
+/* Drop Cap — first paragraph in article prose */
+.prose > p:first-of-type::first-letter {
+  font-family: var(--font-display);
+  float: left;
+  font-size: 3.5em;
+  line-height: 0.8;
+  padding-right: 0.1em;
+  padding-top: 0.05em;
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+/* Reading progress bar */
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-accent-muted), var(--color-accent), var(--color-accent-hover));
+  z-index: 100;
+  transition: none;
+  pointer-events: none;
+}

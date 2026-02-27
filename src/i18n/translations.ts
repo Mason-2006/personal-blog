@@ -59,6 +59,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     "notes.entriesCount": "篇笔记",
     "notes.expand": "展开",
     "notes.collapse": "收起",
+    "sidebar.tags": "标签云",
+    "sidebar.random": "随机阅读",
+    "sidebar.stats": "笔记统计",
+    "sidebar.stats.total": "篇笔记",
+    "sidebar.stats.series": "个专栏",
+    "sidebar.randomBtn": "随便看看",
     "lang.switch": "English",
   },
   en: {
@@ -112,6 +118,12 @@ export const translations: Record<Lang, Record<string, string>> = {
     "notes.entriesCount": "entries",
     "notes.expand": "Expand",
     "notes.collapse": "Collapse",
+    "sidebar.tags": "Tags",
+    "sidebar.random": "Random Read",
+    "sidebar.stats": "Stats",
+    "sidebar.stats.total": "notes",
+    "sidebar.stats.series": "series",
+    "sidebar.randomBtn": "Surprise Me",
     "lang.switch": "中文",
   },
 };
@@ -154,4 +166,25 @@ export const categoryNames: Record<Lang, Record<string, string>> = {
     proof: "Short Proofs",
     reflection: "Reflections",
   },
+};
+
+// Series accent colors — used for color-coded borders on post items
+export const seriesColors: Record<string, string> = {
+  RA: "#5b7b9b",  // steel blue — Real Analysis
+  LA: "#7b5b9b",  // muted purple — Linear Algebra
+  PR: "#5b9b7b",  // sage green — Probability
+  CA: "#9b7b5b",  // warm amber — Calculus / Analysis (matches site accent)
+  CM: "#8b6b4b",  // earthy brown — Classical Mechanics
+  EM: "#6b8b9b",  // slate teal — Electromagnetism
+  SR: "#9b5b6b",  // dusted rose — Special Relativity
+  QM: "#6b5b8b",  // twilight purple — Quantum Mechanics
+  CX: "#5b8b6b",  // forest green — Complex Analysis
+};
+
+// Category accent colors for marginalia
+export const categoryColors: Record<string, string> = {
+  interview: "#9b9b5b",  // olive
+  problem: "#7b8b5b",   // moss
+  proof: "#5b7b9b",     // steel blue
+  reflection: "#9b6b7b", // mauve
 };

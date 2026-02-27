@@ -57,6 +57,7 @@ const categoryLabel = category ? categoryMap[category] || category : null;
   tags={tags}
   lang={lang}
 >
+  <div class="reading-progress" id="reading-progress"></div>
   <article class="container-narrow py-12 md:py-16">
     <header class="mb-10">
       <div class="article-meta">
@@ -135,6 +136,23 @@ const categoryLabel = category ? categoryMap[category] || category : null;
   document.getElementById("scroll-to-top")?.addEventListener("click", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
+
+  // Reading progress bar
+  const progressBar = document.getElementById("reading-progress");
+  if (progressBar) {
+    const updateProgress = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      progressBar.style.width = `${Math.min(progress, 100)}%`;
+    };
+    window.addEventListener("scroll", updateProgress, { passive: true });
+    updateProgress();
+    document.addEventListener("astro:after-swap", () => {
+      window.addEventListener("scroll", updateProgress, { passive: true });
+      updateProgress();
+    });
+  }
 </script>
 
 <style>
