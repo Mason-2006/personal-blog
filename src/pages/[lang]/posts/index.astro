@@ -2,8 +2,8 @@
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
 import type { Lang } from "../../../i18n/translations";
-import { seriesNames, categoryNames } from "../../../i18n/translations";
-import { t, formatDate } from "../../../i18n/utils";
+import { seriesNames, seriesColors, categoryColors } from "../../../i18n/translations";
+import { t, formatDayMonth, getMonthName } from "../../../i18n/utils";
 
 export function getStaticPaths() {
   return [{ params: { lang: "zh" } }, { params: { lang: "en" } }];
@@ -16,72 +16,543 @@ const sortedPosts = allPosts.sort(
   (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
 );
 
+// Group posts by year → month
+type PostEntry = (typeof sortedPosts)[number];
+const grouped = new Map<number, Map<string, PostEntry[]>>();
+
+for (const post of sortedPosts) {
+  const year = post.data.pubDate.getFullYear();
+  const month = getMonthName(post.data.pubDate, lang);
+
+  if (!grouped.has(year)) grouped.set(year, new Map());
+  const yearMap = grouped.get(year)!;
+  if (!yearMap.has(month)) yearMap.set(month, []);
+  yearMap.get(month)!.push(post);
+}
+
 const series = seriesNames[lang];
-const categories = categoryNames[lang];
+
+// Build search index data for client-side search
+const searchIndex = sortedPosts.map((post) => ({
+  title: post.data.title,
+  description: post.data.description,
+  tags: post.data.tags,
+  slug: post.id,
+  type: post.data.type,
+  series: post.data.series ? series[post.data.series] || post.data.series : "",
+}));
+
+// Sidebar data: tag cloud
+const tagCounts = new Map<string, number>();
+for (const post of sortedPosts) {
+  for (const tag of post.data.tags) {
+    tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+  }
+}
+const maxTagCount = Math.max(...tagCounts.values(), 1);
+const sortedTags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]);
+
+// Sidebar data: stats
+const totalPosts = sortedPosts.length;
+const uniqueSeries = new Set(sortedPosts.filter(p => p.data.series).map(p => p.data.series)).size;
+
+// Sidebar data: random picks (select 3 at build time)
+const shuffled = [...sortedPosts].sort(() => Math.random() - 0.5);
+const randomPicks = shuffled.slice(0, 3);
+
+// All post URLs for client-side random navigation
+const allPostUrls = sortedPosts.map((p) => `/${lang}/posts/${p.id}`);
+
+// Helper: get border color for a post
+function getPostColor(post: PostEntry): string {
+  if (post.data.series && seriesColors[post.data.series]) {
+    return seriesColors[post.data.series];
+  }
+  if (post.data.category && categoryColors[post.data.category]) {
+    return categoryColors[post.data.category];
+  }
+  return "var(--color-accent-muted)";
+}
 ---
 
 <BaseLayout
   title={t(lang, "posts.title")}
-  description={t(lang, "site.description")}
+  description={`${sortedPosts.length} ${t(lang, "posts.entries")}`}
   lang={lang}
 >
-  <section class="container-narrow py-12 md:py-16">
-    <header class="mb-12">
-      <h1 class="page-heading text-3xl md:text-4xl mb-3">
+  <section class="container-wide py-12 md:py-16">
+    <header class="home-header">
+      <h1 class="page-heading">
         {t(lang, "posts.title")}
       </h1>
-      <p class="page-subtitle">
-        {sortedPosts.length} {t(lang, "posts.entries")}
+      <p class="page-subtitle" style="max-width: 50ch;">
+        {`${sortedPosts.length} ${t(lang, "posts.entries")}`}
       </p>
     </header>
 
-    <div class="post-list">
-      {sortedPosts.map((post) => {
-        const seriesLabel = post.data.series ? series[post.data.series] || post.data.series : null;
-        const catLabel = post.data.type === "marginalia" && post.data.category
-          ? categories[post.data.category] || post.data.category
-          : null;
-        const secondaryLabel = seriesLabel || catLabel || (post.data.type === "marginalia" ? t(lang, "nav.marginalia") : null);
-        return (
-          <article class="post-item">
-            <div class="post-meta">
-              <time datetime={post.data.pubDate.toISOString()}>
-                {formatDate(post.data.pubDate, lang)}
-              </time>
-              {secondaryLabel && (
-                <span class="post-label">{secondaryLabel}</span>
-              )}
+    <!-- Search Bar -->
+    <div class="search-container">
+      <div class="search-wrapper">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input
+          type="text"
+          id="search-input"
+          class="search-input"
+          placeholder={t(lang, "search.placeholder")}
+          autocomplete="off"
+          aria-label={t(lang, "search.label")}
+        />
+        <button id="search-clear" class="search-clear hidden" type="button" aria-label="Clear search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <!-- Search results container -->
+      <div id="search-results" class="search-results hidden"></div>
+      <p id="search-no-results" class="search-no-results hidden">{t(lang, "search.noResults")}</p>
+    </div>
+
+    <!-- Two-column layout -->
+    <div class="home-grid">
+      <!-- Main content -->
+      <div class="home-main">
+        <div id="timeline-view">
+          {grouped.size > 0 ? (
+            <div class="timeline">
+              {[...grouped.entries()].map(([year, months]) => (
+                <section class="year-group">
+                  <h2 class="year-heading">{year}</h2>
+                  {[...months.entries()].map(([month, posts]) => (
+                    <div class="month-group">
+                      <h3 class="month-heading">{month}</h3>
+                      <div class="post-list">
+                        {posts.map((post) => {
+                          const seriesLabel = post.data.series ? series[post.data.series] || post.data.series : null;
+                          const typeLabel = post.data.type === "marginalia" ? t(lang, "nav.marginalia") : null;
+                          const borderColor = getPostColor(post);
+                          return (
+                            <article class="post-item" style={`border-left: 3px solid ${borderColor}`}>
+                              <div class="post-meta">
+                                <time datetime={post.data.pubDate.toISOString()}>
+                                  {formatDayMonth(post.data.pubDate, lang)}
+                                </time>
+                                {seriesLabel && (
+                                  <span class="post-series">{seriesLabel}</span>
+                                )}
+                                {typeLabel && !seriesLabel && (
+                                  <span class="post-series">{typeLabel}</span>
+                                )}
+                                {post.data.lang !== lang && (
+                                  <span class="post-lang">{post.data.lang.toUpperCase()}</span>
+                                )}
+                              </div>
+                              <h4 class="post-title">
+                                <a href={`/${lang}/posts/${post.id}`}>{post.data.title}</a>
+                              </h4>
+                              <p class="post-desc">{post.data.description}</p>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </section>
+              ))}
             </div>
-            <h2 class="post-title">
-              <a href={`/${lang}/posts/${post.id}`}>{post.data.title}</a>
-            </h2>
-            <p class="post-desc">{post.data.description}</p>
-          </article>
-        );
-      })}
+          ) : (
+            <p class="text-muted-fallback">{t(lang, "posts.noPosts")}</p>
+          )}
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="home-sidebar">
+        <!-- Stats Widget -->
+        <div class="sidebar-widget">
+          <h3 class="sidebar-heading">{t(lang, "sidebar.stats")}</h3>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <span class="stat-number">{totalPosts}</span>
+              <span class="stat-label">{t(lang, "sidebar.stats.total")}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">{uniqueSeries}</span>
+              <span class="stat-label">{t(lang, "sidebar.stats.series")}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tag Cloud Widget -->
+        <div class="sidebar-widget">
+          <h3 class="sidebar-heading">{t(lang, "sidebar.tags")}</h3>
+          <div class="tag-cloud">
+            {sortedTags.map(([tag, count]) => {
+              const minSize = 0.75;
+              const maxSize = 1.1;
+              const size = minSize + ((count / maxTagCount) * (maxSize - minSize));
+              return (
+                <span
+                  class="tag-item"
+                  style={`font-size: ${size}rem`}
+                  title={`${count}`}
+                >
+                  {tag}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+
+        <!-- Random Reads Widget -->
+        <div class="sidebar-widget">
+          <h3 class="sidebar-heading">{t(lang, "sidebar.random")}</h3>
+          <ul class="random-list">
+            {randomPicks.map((post) => (
+              <li>
+                <a href={`/${lang}/posts/${post.id}`} class="random-link">
+                  {post.data.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <button id="surprise-btn" class="surprise-btn" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 4l-4 4M18 4v4M18 4h-4" />
+              <path d="M6 20l4-4M6 20v-4M6 20h4" />
+              <path d="M14 2a2 2 0 012 2M2 14a2 2 0 002 2M22 10a2 2 0 01-2 2M10 22a2 2 0 01-2-2" />
+            </svg>
+            {t(lang, "sidebar.randomBtn")}
+          </button>
+        </div>
+      </aside>
     </div>
   </section>
 </BaseLayout>
 
+<!-- Inline search index + random navigation data -->
+<script is:inline define:vars={{ searchIndex, lang, allPostUrls }}>
+  (function () {
+    // --- Search ---
+    const input = document.getElementById("search-input");
+    const clearBtn = document.getElementById("search-clear");
+    const resultsContainer = document.getElementById("search-results");
+    const noResultsEl = document.getElementById("search-no-results");
+    const timelineView = document.getElementById("timeline-view");
+
+    if (!input || !clearBtn || !resultsContainer || !noResultsEl || !timelineView) return;
+
+    function normalize(str) {
+      return str.toLowerCase().trim();
+    }
+
+    function matchesQuery(post, query) {
+      var q = normalize(query);
+      return (
+        normalize(post.title).includes(q) ||
+        normalize(post.description).includes(q) ||
+        post.tags.some(function (tag) { return normalize(tag).includes(q); }) ||
+        normalize(post.series).includes(q)
+      );
+    }
+
+    function renderResults(matches) {
+      if (matches.length === 0) {
+        resultsContainer.classList.add("hidden");
+        resultsContainer.innerHTML = "";
+        noResultsEl.classList.remove("hidden");
+        timelineView.classList.add("hidden");
+        return;
+      }
+
+      noResultsEl.classList.add("hidden");
+      timelineView.classList.add("hidden");
+
+      var html = "";
+      for (var i = 0; i < matches.length; i++) {
+        var post = matches[i];
+        var typeClass = post.type === "marginalia" ? "result-type-marginalia" : "result-type-core";
+        html += '<article class="result-item">';
+        html += '<div class="result-meta">';
+        html += '<span class="result-type ' + typeClass + '">' + (post.type === "marginalia" ? (lang === "zh" ? "随记" : "Marginalia") : (lang === "zh" ? "笔记" : "Note")) + '</span>';
+        if (post.series) {
+          html += '<span class="result-series">' + post.series + '</span>';
+        }
+        html += '</div>';
+        html += '<h4 class="result-title"><a href="/' + lang + '/posts/' + post.slug + '">' + post.title + '</a></h4>';
+        html += '<p class="result-desc">' + post.description + '</p>';
+        html += '</article>';
+      }
+
+      resultsContainer.innerHTML = html;
+      resultsContainer.classList.remove("hidden");
+    }
+
+    function handleSearch() {
+      var query = input.value.trim();
+
+      if (query.length > 0) {
+        clearBtn.classList.remove("hidden");
+      } else {
+        clearBtn.classList.add("hidden");
+      }
+
+      if (query.length === 0) {
+        resultsContainer.classList.add("hidden");
+        resultsContainer.innerHTML = "";
+        noResultsEl.classList.add("hidden");
+        timelineView.classList.remove("hidden");
+        return;
+      }
+
+      var matches = searchIndex.filter(function (post) {
+        return matchesQuery(post, query);
+      });
+
+      renderResults(matches);
+    }
+
+    var debounceTimer = null;
+    input.addEventListener("input", function () {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(handleSearch, 150);
+    });
+
+    clearBtn.addEventListener("click", function () {
+      input.value = "";
+      clearBtn.classList.add("hidden");
+      resultsContainer.classList.add("hidden");
+      resultsContainer.innerHTML = "";
+      noResultsEl.classList.add("hidden");
+      timelineView.classList.remove("hidden");
+      input.focus();
+    });
+
+    // --- Surprise Me button ---
+    var surpriseBtn = document.getElementById("surprise-btn");
+    if (surpriseBtn && allPostUrls.length > 0) {
+      surpriseBtn.addEventListener("click", function () {
+        var idx = Math.floor(Math.random() * allPostUrls.length);
+        window.location.href = allPostUrls[idx];
+      });
+    }
+  })();
+</script>
+
 <style>
+  /* Page heading */
+  .home-header {
+    margin-bottom: 2.5rem;
+  }
+
+  .page-heading {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 0.75rem;
+  }
+
+  html:not(.dark) .page-heading {
+    color: var(--color-light-text-primary);
+  }
+
+  @media (min-width: 768px) {
+    .page-heading {
+      font-size: 2.25rem;
+    }
+  }
+
+  .page-subtitle {
+    color: var(--color-text-secondary);
+  }
+
+  html:not(.dark) .page-subtitle {
+    color: var(--color-light-text-secondary);
+  }
+
+  /* Search */
+  .search-container {
+    position: relative;
+    margin-bottom: 2.5rem;
+  }
+
+  .search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 0.85rem;
+    color: var(--color-text-muted);
+    pointer-events: none;
+  }
+
+  html:not(.dark) .search-icon {
+    color: var(--color-light-text-muted);
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 0.65rem 2.5rem 0.65rem 2.75rem;
+    font-family: var(--font-serif);
+    font-size: 0.95rem;
+    color: var(--color-text-primary);
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    outline: none;
+    transition: border-color 200ms ease, background-color 200ms ease;
+  }
+
+  html:not(.dark) .search-input {
+    color: var(--color-light-text-primary);
+    background-color: var(--color-light-bg-secondary);
+    border-color: var(--color-light-border);
+  }
+
+  .search-input::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  html:not(.dark) .search-input::placeholder {
+    color: var(--color-light-text-muted);
+  }
+
+  .search-input:focus {
+    border-color: var(--color-accent);
+  }
+
+  .search-clear {
+    position: absolute;
+    right: 0.65rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem;
+    color: var(--color-text-muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    border-radius: 0.25rem;
+    transition: color 200ms ease;
+  }
+
+  .search-clear:hover {
+    color: var(--color-text-primary);
+  }
+
+  html:not(.dark) .search-clear {
+    color: var(--color-light-text-muted);
+  }
+
+  html:not(.dark) .search-clear:hover {
+    color: var(--color-light-text-primary);
+  }
+
+  .search-results {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .search-no-results {
+    margin-top: 1.5rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+
+  html:not(.dark) .search-no-results {
+    color: var(--color-light-text-muted);
+  }
+
+  /* Two-column grid */
+  .home-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+
+  @media (min-width: 768px) {
+    .home-grid {
+      grid-template-columns: 1fr 280px;
+    }
+  }
+
+  .text-muted-fallback {
+    color: var(--color-text-muted);
+  }
+
+  html:not(.dark) .text-muted-fallback {
+    color: var(--color-light-text-muted);
+  }
+
+  /* Timeline */
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+  }
+
+  .year-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .year-heading {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.02em;
+  }
+
+  html:not(.dark) .year-heading {
+    color: var(--color-light-text-primary);
+  }
+
+  .month-group {
+    margin-bottom: 2rem;
+  }
+
+  .month-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .month-heading {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 500;
+    font-style: italic;
+    color: var(--color-text-secondary);
+    margin-bottom: 1rem;
+    padding-left: 0.5rem;
+    border-left: 2px solid var(--color-accent-muted);
+  }
+
+  html:not(.dark) .month-heading {
+    color: var(--color-light-text-secondary);
+  }
+
   .post-list {
     display: flex;
     flex-direction: column;
-    gap: 2.5rem;
+    gap: 1.5rem;
+    padding-left: 0.5rem;
   }
 
   .post-item {
-    padding-bottom: 2.5rem;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .post-item:last-child {
+    padding: 0.75rem 0 0.75rem 1rem;
     border-bottom: none;
-    padding-bottom: 0;
-  }
-
-  html:not(.dark) .post-item {
-    border-bottom-color: var(--color-light-border);
+    transition: border-color 200ms ease;
   }
 
   .post-meta {
@@ -97,21 +568,33 @@ const categories = categoryNames[lang];
     color: var(--color-light-text-muted);
   }
 
-  .post-label {
+  .post-series {
     font-style: italic;
   }
 
-  .post-label::before {
+  .post-series::before {
     content: " · ";
     font-style: normal;
   }
 
+  .post-lang {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    padding: 0.1rem 0.35rem;
+    border-radius: 0.2rem;
+    background-color: var(--color-bg-tertiary);
+  }
+
+  html:not(.dark) .post-lang {
+    background-color: var(--color-light-bg-tertiary);
+  }
+
   .post-title {
     font-family: var(--font-display);
-    font-size: 1.35rem;
+    font-size: 1.25rem;
     font-weight: 500;
     line-height: 1.35;
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.3rem;
   }
 
   .post-title a {
@@ -134,7 +617,7 @@ const categories = categoryNames[lang];
 
   .post-desc {
     color: var(--color-text-secondary);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     line-height: 1.6;
     max-width: 60ch;
   }
@@ -143,21 +626,261 @@ const categories = categoryNames[lang];
     color: var(--color-light-text-secondary);
   }
 
-  .page-heading {
-    font-family: var(--font-display);
-    font-weight: 500;
-    color: var(--color-text-primary);
+  /* ---- Sidebar ---- */
+  .home-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
   }
 
-  html:not(.dark) .page-heading {
+  @media (min-width: 768px) {
+    .home-sidebar {
+      position: sticky;
+      top: 5rem;
+      align-self: start;
+    }
+  }
+
+  .sidebar-widget {
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+  }
+
+  html:not(.dark) .sidebar-widget {
+    background-color: var(--color-light-bg-secondary);
+    border-color: var(--color-light-border);
+  }
+
+  .sidebar-heading {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--color-accent);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  html:not(.dark) .sidebar-heading {
+    border-bottom-color: var(--color-light-border);
+  }
+
+  /* Stats */
+  .stats-grid {
+    display: flex;
+    gap: 2rem;
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+  }
+
+  .stat-number {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    line-height: 1;
+  }
+
+  html:not(.dark) .stat-number {
     color: var(--color-light-text-primary);
   }
 
-  .page-subtitle {
-    color: var(--color-text-secondary);
+  .stat-label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    letter-spacing: 0.02em;
   }
 
-  html:not(.dark) .page-subtitle {
+  html:not(.dark) .stat-label {
+    color: var(--color-light-text-muted);
+  }
+
+  /* Tag Cloud */
+  .tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.6rem;
+    line-height: 1.8;
+  }
+
+  .tag-item {
+    color: var(--color-text-secondary);
+    transition: color 200ms ease;
+    cursor: default;
+  }
+
+  .tag-item:hover {
+    color: var(--color-accent);
+  }
+
+  html:not(.dark) .tag-item {
+    color: var(--color-light-text-secondary);
+  }
+
+  html:not(.dark) .tag-item:hover {
+    color: var(--color-accent);
+  }
+
+  /* Random Reads */
+  .random-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .random-link {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    transition: color 200ms ease;
+    line-height: 1.4;
+    display: block;
+  }
+
+  .random-link:hover {
+    color: var(--color-accent);
+  }
+
+  html:not(.dark) .random-link {
+    color: var(--color-light-text-secondary);
+  }
+
+  html:not(.dark) .random-link:hover {
+    color: var(--color-accent);
+  }
+
+  .surprise-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.85rem;
+    font-family: var(--font-serif);
+    font-size: 0.8rem;
+    color: var(--color-accent);
+    background-color: transparent;
+    border: 1px solid var(--color-accent-muted);
+    border-radius: 0.35rem;
+    cursor: pointer;
+    transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+  }
+
+  .surprise-btn:hover {
+    background-color: var(--color-accent);
+    border-color: var(--color-accent);
+    color: var(--color-bg-primary);
+  }
+
+  html:not(.dark) .surprise-btn:hover {
+    color: #fff;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+</style>
+
+<!-- Dynamic search result styles (for innerHTML-generated content) -->
+<style is:global>
+  .result-item {
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .result-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  html:not(.dark) .result-item {
+    border-bottom-color: var(--color-light-border);
+  }
+
+  .result-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+    font-size: 0.8rem;
+  }
+
+  .result-type {
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.2rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+  }
+
+  .result-type-core {
+    background-color: rgba(155, 123, 91, 0.15);
+    color: var(--color-accent);
+  }
+
+  .result-type-marginalia {
+    background-color: #9b9b5b20;
+    color: #9b9b5b;
+  }
+
+  .result-series {
+    font-style: italic;
+    color: var(--color-text-muted);
+  }
+
+  html:not(.dark) .result-series {
+    color: var(--color-light-text-muted);
+  }
+
+  .result-series::before {
+    content: " · ";
+    font-style: normal;
+  }
+
+  .result-title {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 500;
+    line-height: 1.35;
+    margin-bottom: 0.25rem;
+  }
+
+  .result-title a {
+    color: var(--color-text-primary);
+    text-decoration: none;
+    transition: color 200ms ease;
+  }
+
+  .result-title a:hover {
+    color: var(--color-accent);
+  }
+
+  html:not(.dark) .result-title a {
+    color: var(--color-light-text-primary);
+  }
+
+  html:not(.dark) .result-title a:hover {
+    color: var(--color-accent);
+  }
+
+  .result-desc {
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    max-width: 60ch;
+  }
+
+  html:not(.dark) .result-desc {
     color: var(--color-light-text-secondary);
   }
 </style>

@@ -18,6 +18,7 @@ const blog = defineCollection({
       })
       .optional(),
     draft: z.boolean().default(false),
+    featured: z.boolean().default(false),
     type: z.enum(["core", "marginalia"]).default("core"),
     series: z.string().optional(),
     noteId: z.string().optional(),

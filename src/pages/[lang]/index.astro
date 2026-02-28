@@ -3,7 +3,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
 import type { Lang } from "../../i18n/translations";
 import { seriesNames, seriesColors, categoryColors } from "../../i18n/translations";
-import { t, formatDayMonth, getMonthName } from "../../i18n/utils";
+import { t, formatDayMonth } from "../../i18n/utils";
 
 export function getStaticPaths() {
   return [{ params: { lang: "zh" } }, { params: { lang: "en" } }];
@@ -16,55 +16,34 @@ const sortedPosts = allPosts.sort(
   (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
 );
 
-// Group posts by year → month
-type PostEntry = (typeof sortedPosts)[number];
-const grouped = new Map<number, Map<string, PostEntry[]>>();
+// Featured posts: those marked featured, fallback to latest 3 core notes
+const featuredPosts = allPosts
+  .filter((p) => p.data.featured)
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+  .slice(0, 4);
+const displayFeatured =
+  featuredPosts.length > 0
+    ? featuredPosts
+    : sortedPosts.filter((p) => p.data.type === "core").slice(0, 3);
 
-for (const post of sortedPosts) {
-  const year = post.data.pubDate.getFullYear();
-  const month = getMonthName(post.data.pubDate, lang);
-
-  if (!grouped.has(year)) grouped.set(year, new Map());
-  const yearMap = grouped.get(year)!;
-  if (!yearMap.has(month)) yearMap.set(month, []);
-  yearMap.get(month)!.push(post);
-}
-
+// Subject map: all series with note counts
 const series = seriesNames[lang];
-
-// Build search index data for client-side search
-const searchIndex = sortedPosts.map((post) => ({
-  title: post.data.title,
-  description: post.data.description,
-  tags: post.data.tags,
-  slug: post.id,
-  type: post.data.type,
-  series: post.data.series ? series[post.data.series] || post.data.series : "",
-}));
-
-// Sidebar data: tag cloud
-const tagCounts = new Map<string, number>();
-for (const post of sortedPosts) {
-  for (const tag of post.data.tags) {
-    tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+const seriesEntries = Object.entries(series);
+const seriesCounts = new Map<string, number>();
+for (const post of allPosts) {
+  if (post.data.series) {
+    seriesCounts.set(
+      post.data.series,
+      (seriesCounts.get(post.data.series) || 0) + 1
+    );
   }
 }
-const maxTagCount = Math.max(...tagCounts.values(), 1);
-const sortedTags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1]);
 
-// Sidebar data: stats
-const totalPosts = sortedPosts.length;
-const uniqueSeries = new Set(sortedPosts.filter(p => p.data.series).map(p => p.data.series)).size;
+// Latest 5 posts
+const latestPosts = sortedPosts.slice(0, 5);
 
-// Sidebar data: random picks (select 3 at build time)
-const shuffled = [...sortedPosts].sort(() => Math.random() - 0.5);
-const randomPicks = shuffled.slice(0, 3);
-
-// All post URLs for client-side random navigation
-const allPostUrls = sortedPosts.map((p) => `/${lang}/posts/${p.id}`);
-
-// Helper: get border color for a post
-function getPostColor(post: PostEntry): string {
+// Helper: get accent color for a post
+function getPostColor(post: (typeof sortedPosts)[number]): string {
   if (post.data.series && seriesColors[post.data.series]) {
     return seriesColors[post.data.series];
   }
@@ -80,807 +59,642 @@ function getPostColor(post: PostEntry): string {
   description={t(lang, "home.subtitle")}
   lang={lang}
 >
-  <section class="container-wide py-12 md:py-16">
-    <header class="home-header">
-      <h1 class="page-heading">
-        {t(lang, "home.title")}
-      </h1>
-      <p class="page-subtitle" style="max-width: 50ch;">
-        {t(lang, "home.subtitle")}
-      </p>
-    </header>
+  <div class="container-narrow py-12 md:py-16">
 
-    <!-- Search Bar -->
-    <div class="search-container">
-      <div class="search-wrapper">
-        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        <input
-          type="text"
-          id="search-input"
-          class="search-input"
-          placeholder={t(lang, "search.placeholder")}
-          autocomplete="off"
-          aria-label={t(lang, "search.label")}
-        />
-        <button id="search-clear" class="search-clear hidden" type="button" aria-label="Clear search">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
+    <!-- ═══ Section 1: Hero ═══ -->
+    <section class="hero animate-on-scroll">
+      <h1 class="hero-title">{t(lang, "home.title")}</h1>
+      <p class="hero-subtitle">{t(lang, "home.subtitle")}</p>
+
+      <div class="hero-divider" aria-hidden="true">§</div>
+
+      <blockquote class="hero-quote">
+        <p>"{t(lang, "home.quote")}"</p>
+        <cite>{t(lang, "home.quote.attr")}</cite>
+      </blockquote>
+
+      <nav class="hero-nav">
+        <a href={`/${lang}/notes/`} class="hero-nav-link">
+          {t(lang, "home.nav.notes")}
+        </a>
+        <a href={`/${lang}/marginalia/`} class="hero-nav-link">
+          {t(lang, "home.nav.marginalia")}
+        </a>
+        <a href={`/${lang}/about/`} class="hero-nav-link">
+          {t(lang, "home.nav.about")}
+        </a>
+      </nav>
+    </section>
+
+    <!-- ═══ Section 2: Featured Notes ═══ -->
+    <section class="home-section animate-on-scroll">
+      <h2 class="section-heading">{t(lang, "home.featured")}</h2>
+      <div class="featured-list">
+        {displayFeatured.map((post, i) => {
+          const color = getPostColor(post);
+          const seriesLabel = post.data.series
+            ? series[post.data.series] || post.data.series
+            : null;
+          return (
+            <a
+              href={`/${lang}/posts/${post.id}`}
+              class={`featured-card delay-${i + 1}`}
+              style={`border-left-color: ${color}`}
+            >
+              <div class="featured-card-header">
+                {post.data.noteId && (
+                  <span class="featured-note-id">{post.data.noteId}</span>
+                )}
+                <time datetime={post.data.pubDate.toISOString()}>
+                  {formatDayMonth(post.data.pubDate, lang)}
+                </time>
+                {seriesLabel && (
+                  <span class="featured-series">{seriesLabel}</span>
+                )}
+              </div>
+              <h3 class="featured-title">{post.data.title}</h3>
+              <p class="featured-desc">{post.data.description}</p>
+            </a>
+          );
+        })}
       </div>
-      <!-- Search results container -->
-      <div id="search-results" class="search-results hidden"></div>
-      <p id="search-no-results" class="search-no-results hidden">{t(lang, "search.noResults")}</p>
-    </div>
+    </section>
 
-    <!-- Two-column layout -->
-    <div class="home-grid">
-      <!-- Main content -->
-      <div class="home-main">
-        <div id="timeline-view">
-          {grouped.size > 0 ? (
-            <div class="timeline">
-              {[...grouped.entries()].map(([year, months]) => (
-                <section class="year-group">
-                  <h2 class="year-heading">{year}</h2>
-                  {[...months.entries()].map(([month, posts]) => (
-                    <div class="month-group">
-                      <h3 class="month-heading">{month}</h3>
-                      <div class="post-list">
-                        {posts.map((post) => {
-                          const seriesLabel = post.data.series ? series[post.data.series] || post.data.series : null;
-                          const typeLabel = post.data.type === "marginalia" ? t(lang, "nav.marginalia") : null;
-                          const borderColor = getPostColor(post);
-                          return (
-                            <article class="post-item" style={`border-left: 3px solid ${borderColor}`}>
-                              <div class="post-meta">
-                                <time datetime={post.data.pubDate.toISOString()}>
-                                  {formatDayMonth(post.data.pubDate, lang)}
-                                </time>
-                                {seriesLabel && (
-                                  <span class="post-series">{seriesLabel}</span>
-                                )}
-                                {typeLabel && !seriesLabel && (
-                                  <span class="post-series">{typeLabel}</span>
-                                )}
-                                {post.data.lang !== lang && (
-                                  <span class="post-lang">{post.data.lang.toUpperCase()}</span>
-                                )}
-                              </div>
-                              <h4 class="post-title">
-                                <a href={`/${lang}/posts/${post.id}`}>{post.data.title}</a>
-                              </h4>
-                              <p class="post-desc">{post.data.description}</p>
-                            </article>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </section>
-              ))}
-            </div>
+    <!-- ═══ Section 3: Subject Map ═══ -->
+    <section class="home-section animate-on-scroll">
+      <h2 class="section-heading">{t(lang, "home.subjects")}</h2>
+      <div class="subject-grid">
+        {seriesEntries.map(([key, name], i) => {
+          const count = seriesCounts.get(key) || 0;
+          const color = seriesColors[key] || "var(--color-accent-muted)";
+          const hasContent = count > 0;
+          return hasContent ? (
+            <a
+              href={`/${lang}/notes/`}
+              class={`subject-tile delay-${(i % 3) + 1}`}
+            >
+              <span class="subject-dot" style={`background-color: ${color}`} />
+              <span class="subject-name">{name}</span>
+              <span class="subject-count">
+                {count} {t(lang, "home.subjects.notes")}
+              </span>
+            </a>
           ) : (
-            <p class="text-muted-fallback">{t(lang, "posts.noPosts")}</p>
-          )}
-        </div>
+            <div class={`subject-tile subject-tile-empty delay-${(i % 3) + 1}`}>
+              <span class="subject-dot" style={`background-color: ${color}; opacity: 0.4`} />
+              <span class="subject-name">{name}</span>
+              <span class="subject-soon">{t(lang, "home.subjects.soon")}</span>
+            </div>
+          );
+        })}
       </div>
+    </section>
 
-      <!-- Sidebar -->
-      <aside class="home-sidebar">
-        <!-- Stats Widget -->
-        <div class="sidebar-widget">
-          <h3 class="sidebar-heading">{t(lang, "sidebar.stats")}</h3>
-          <div class="stats-grid">
-            <div class="stat-item">
-              <span class="stat-number">{totalPosts}</span>
-              <span class="stat-label">{t(lang, "sidebar.stats.total")}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-number">{uniqueSeries}</span>
-              <span class="stat-label">{t(lang, "sidebar.stats.series")}</span>
-            </div>
-          </div>
-        </div>
+    <!-- ═══ Section 4: Latest Activity ═══ -->
+    <section class="home-section animate-on-scroll">
+      <h2 class="section-heading">{t(lang, "home.latest")}</h2>
+      <ul class="latest-list">
+        {latestPosts.map((post) => {
+          const typeLabel =
+            post.data.type === "marginalia"
+              ? t(lang, "nav.marginalia")
+              : t(lang, "nav.notes");
+          const typeClass =
+            post.data.type === "marginalia" ? "badge-marginalia" : "badge-core";
+          return (
+            <li class="latest-item">
+              <time datetime={post.data.pubDate.toISOString()}>
+                {formatDayMonth(post.data.pubDate, lang)}
+              </time>
+              <a href={`/${lang}/posts/${post.id}`} class="latest-title">
+                {post.data.title}
+              </a>
+              <span class={`latest-badge ${typeClass}`}>{typeLabel}</span>
+            </li>
+          );
+        })}
+      </ul>
+      <a href={`/${lang}/posts/`} class="view-all-link">
+        {t(lang, "home.latest.viewAll")}
+      </a>
+    </section>
 
-        <!-- Tag Cloud Widget -->
-        <div class="sidebar-widget">
-          <h3 class="sidebar-heading">{t(lang, "sidebar.tags")}</h3>
-          <div class="tag-cloud">
-            {sortedTags.map(([tag, count]) => {
-              const minSize = 0.75;
-              const maxSize = 1.1;
-              const size = minSize + ((count / maxTagCount) * (maxSize - minSize));
-              return (
-                <span
-                  class="tag-item"
-                  style={`font-size: ${size}rem`}
-                  title={`${count}`}
-                >
-                  {tag}
-                </span>
-              );
-            })}
-          </div>
-        </div>
+    <!-- ═══ Section 5: Colophon ═══ -->
+    <section class="home-section colophon animate-on-scroll">
+      <h2 class="section-heading">{t(lang, "home.currently")}</h2>
+      <p class="colophon-text">{t(lang, "home.currently.desc")}</p>
+      <p class="colophon-built">{t(lang, "home.builtWith")}</p>
+    </section>
 
-        <!-- Random Reads Widget -->
-        <div class="sidebar-widget">
-          <h3 class="sidebar-heading">{t(lang, "sidebar.random")}</h3>
-          <ul class="random-list">
-            {randomPicks.map((post) => (
-              <li>
-                <a href={`/${lang}/posts/${post.id}`} class="random-link">
-                  {post.data.title}
-                </a>
-              </li>
-            ))}
-          </ul>
-          <button id="surprise-btn" class="surprise-btn" type="button">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 4l-4 4M18 4v4M18 4h-4" />
-              <path d="M6 20l4-4M6 20v-4M6 20h4" />
-              <path d="M14 2a2 2 0 012 2M2 14a2 2 0 002 2M22 10a2 2 0 01-2 2M10 22a2 2 0 01-2-2" />
-            </svg>
-            {t(lang, "sidebar.randomBtn")}
-          </button>
-        </div>
-      </aside>
-    </div>
-  </section>
+  </div>
 </BaseLayout>
 
-<!-- Inline search index + random navigation data -->
-<script is:inline define:vars={{ searchIndex, lang, allPostUrls }}>
+<script is:inline>
   (function () {
-    // --- Search ---
-    const input = document.getElementById("search-input");
-    const clearBtn = document.getElementById("search-clear");
-    const resultsContainer = document.getElementById("search-results");
-    const noResultsEl = document.getElementById("search-no-results");
-    const timelineView = document.getElementById("timeline-view");
-
-    if (!input || !clearBtn || !resultsContainer || !noResultsEl || !timelineView) return;
-
-    function normalize(str) {
-      return str.toLowerCase().trim();
-    }
-
-    function matchesQuery(post, query) {
-      var q = normalize(query);
-      return (
-        normalize(post.title).includes(q) ||
-        normalize(post.description).includes(q) ||
-        post.tags.some(function (tag) { return normalize(tag).includes(q); }) ||
-        normalize(post.series).includes(q)
-      );
-    }
-
-    function renderResults(matches) {
-      if (matches.length === 0) {
-        resultsContainer.classList.add("hidden");
-        resultsContainer.innerHTML = "";
-        noResultsEl.classList.remove("hidden");
-        timelineView.classList.add("hidden");
-        return;
-      }
-
-      noResultsEl.classList.add("hidden");
-      timelineView.classList.add("hidden");
-
-      var html = "";
-      for (var i = 0; i < matches.length; i++) {
-        var post = matches[i];
-        var typeClass = post.type === "marginalia" ? "result-type-marginalia" : "result-type-core";
-        html += '<article class="result-item">';
-        html += '<div class="result-meta">';
-        html += '<span class="result-type ' + typeClass + '">' + (post.type === "marginalia" ? (lang === "zh" ? "随记" : "Marginalia") : (lang === "zh" ? "笔记" : "Note")) + '</span>';
-        if (post.series) {
-          html += '<span class="result-series">' + post.series + '</span>';
-        }
-        html += '</div>';
-        html += '<h4 class="result-title"><a href="/' + lang + '/posts/' + post.slug + '">' + post.title + '</a></h4>';
-        html += '<p class="result-desc">' + post.description + '</p>';
-        html += '</article>';
-      }
-
-      resultsContainer.innerHTML = html;
-      resultsContainer.classList.remove("hidden");
-    }
-
-    function handleSearch() {
-      var query = input.value.trim();
-
-      if (query.length > 0) {
-        clearBtn.classList.remove("hidden");
-      } else {
-        clearBtn.classList.add("hidden");
-      }
-
-      if (query.length === 0) {
-        resultsContainer.classList.add("hidden");
-        resultsContainer.innerHTML = "";
-        noResultsEl.classList.add("hidden");
-        timelineView.classList.remove("hidden");
-        return;
-      }
-
-      var matches = searchIndex.filter(function (post) {
-        return matchesQuery(post, query);
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.08 }
+    );
+    document
+      .querySelectorAll(".animate-on-scroll")
+      .forEach(function (el) {
+        observer.observe(el);
       });
-
-      renderResults(matches);
-    }
-
-    var debounceTimer = null;
-    input.addEventListener("input", function () {
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(handleSearch, 150);
-    });
-
-    clearBtn.addEventListener("click", function () {
-      input.value = "";
-      clearBtn.classList.add("hidden");
-      resultsContainer.classList.add("hidden");
-      resultsContainer.innerHTML = "";
-      noResultsEl.classList.add("hidden");
-      timelineView.classList.remove("hidden");
-      input.focus();
-    });
-
-    // --- Surprise Me button ---
-    var surpriseBtn = document.getElementById("surprise-btn");
-    if (surpriseBtn && allPostUrls.length > 0) {
-      surpriseBtn.addEventListener("click", function () {
-        var idx = Math.floor(Math.random() * allPostUrls.length);
-        window.location.href = allPostUrls[idx];
-      });
-    }
   })();
 </script>
 
 <style>
-  /* Page heading */
-  .home-header {
-    margin-bottom: 2.5rem;
+  /* ══════════════════════════════════════
+     Animations
+     ══════════════════════════════════════ */
+  .animate-on-scroll {
+    opacity: 0;
+    transform: translateY(1.5rem);
+    transition: opacity 0.6s ease, transform 0.6s ease;
   }
 
-  .page-heading {
+  .animate-on-scroll.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .animate-on-scroll.visible .delay-1 { transition-delay: 0.1s; }
+  .animate-on-scroll.visible .delay-2 { transition-delay: 0.15s; }
+  .animate-on-scroll.visible .delay-3 { transition-delay: 0.2s; }
+  .animate-on-scroll.visible .delay-4 { transition-delay: 0.25s; }
+
+  /* ══════════════════════════════════════
+     Section spacing
+     ══════════════════════════════════════ */
+  .home-section {
+    margin-bottom: 4rem;
+  }
+
+  .home-section:last-child {
+    margin-bottom: 0;
+  }
+
+  /* ══════════════════════════════════════
+     Section 1: Hero
+     ══════════════════════════════════════ */
+  .hero {
+    text-align: center;
+    margin-bottom: 4.5rem;
+  }
+
+  .hero-title {
     font-family: var(--font-display);
     font-size: 2rem;
     font-weight: 500;
     color: var(--color-text-primary);
-    margin-bottom: 0.75rem;
-  }
-
-  html:not(.dark) .page-heading {
-    color: var(--color-light-text-primary);
-  }
-
-  @media (min-width: 768px) {
-    .page-heading {
-      font-size: 2.25rem;
-    }
-  }
-
-  .page-subtitle {
-    color: var(--color-text-secondary);
-  }
-
-  html:not(.dark) .page-subtitle {
-    color: var(--color-light-text-secondary);
-  }
-
-  /* Search */
-  .search-container {
-    position: relative;
-    margin-bottom: 2.5rem;
-  }
-
-  .search-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-
-  .search-icon {
-    position: absolute;
-    left: 0.85rem;
-    color: var(--color-text-muted);
-    pointer-events: none;
-  }
-
-  html:not(.dark) .search-icon {
-    color: var(--color-light-text-muted);
-  }
-
-  .search-input {
-    width: 100%;
-    padding: 0.65rem 2.5rem 0.65rem 2.75rem;
-    font-family: var(--font-serif);
-    font-size: 0.95rem;
-    color: var(--color-text-primary);
-    background-color: var(--color-bg-secondary);
-    border: 1px solid var(--color-border);
-    border-radius: 0.5rem;
-    outline: none;
-    transition: border-color 200ms ease, background-color 200ms ease;
-  }
-
-  html:not(.dark) .search-input {
-    color: var(--color-light-text-primary);
-    background-color: var(--color-light-bg-secondary);
-    border-color: var(--color-light-border);
-  }
-
-  .search-input::placeholder {
-    color: var(--color-text-muted);
-  }
-
-  html:not(.dark) .search-input::placeholder {
-    color: var(--color-light-text-muted);
-  }
-
-  .search-input:focus {
-    border-color: var(--color-accent);
-  }
-
-  .search-clear {
-    position: absolute;
-    right: 0.65rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.25rem;
-    color: var(--color-text-muted);
-    background: none;
-    border: none;
-    cursor: pointer;
-    border-radius: 0.25rem;
-    transition: color 200ms ease;
-  }
-
-  .search-clear:hover {
-    color: var(--color-text-primary);
-  }
-
-  html:not(.dark) .search-clear {
-    color: var(--color-light-text-muted);
-  }
-
-  html:not(.dark) .search-clear:hover {
-    color: var(--color-light-text-primary);
-  }
-
-  .search-results {
-    margin-top: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .search-no-results {
-    margin-top: 1.5rem;
-    color: var(--color-text-muted);
-    font-style: italic;
-  }
-
-  html:not(.dark) .search-no-results {
-    color: var(--color-light-text-muted);
-  }
-
-  /* Two-column grid */
-  .home-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 3rem;
-  }
-
-  @media (min-width: 768px) {
-    .home-grid {
-      grid-template-columns: 1fr 280px;
-    }
-  }
-
-  .text-muted-fallback {
-    color: var(--color-text-muted);
-  }
-
-  html:not(.dark) .text-muted-fallback {
-    color: var(--color-light-text-muted);
-  }
-
-  /* Timeline */
-  .timeline {
-    display: flex;
-    flex-direction: column;
-    gap: 3rem;
-  }
-
-  .year-group {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .year-heading {
-    font-family: var(--font-display);
-    font-size: 1.75rem;
-    font-weight: 500;
-    color: var(--color-text-primary);
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.6rem;
     letter-spacing: 0.02em;
+    line-height: 1.2;
   }
 
-  html:not(.dark) .year-heading {
+  html:not(.dark) .hero-title {
     color: var(--color-light-text-primary);
-  }
-
-  .month-group {
-    margin-bottom: 2rem;
-  }
-
-  .month-group:last-child {
-    margin-bottom: 0;
-  }
-
-  .month-heading {
-    font-family: var(--font-display);
-    font-size: 1.1rem;
-    font-weight: 500;
-    font-style: italic;
-    color: var(--color-text-secondary);
-    margin-bottom: 1rem;
-    padding-left: 0.5rem;
-    border-left: 2px solid var(--color-accent-muted);
-  }
-
-  html:not(.dark) .month-heading {
-    color: var(--color-light-text-secondary);
-  }
-
-  .post-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    padding-left: 0.5rem;
-  }
-
-  .post-item {
-    padding: 0.75rem 0 0.75rem 1rem;
-    border-bottom: none;
-    transition: border-color 200ms ease;
-  }
-
-  .post-meta {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.4rem;
-    font-size: 0.85rem;
-    color: var(--color-text-muted);
-  }
-
-  html:not(.dark) .post-meta {
-    color: var(--color-light-text-muted);
-  }
-
-  .post-series {
-    font-style: italic;
-  }
-
-  .post-series::before {
-    content: " · ";
-    font-style: normal;
-  }
-
-  .post-lang {
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    padding: 0.1rem 0.35rem;
-    border-radius: 0.2rem;
-    background-color: var(--color-bg-tertiary);
-  }
-
-  html:not(.dark) .post-lang {
-    background-color: var(--color-light-bg-tertiary);
-  }
-
-  .post-title {
-    font-family: var(--font-display);
-    font-size: 1.25rem;
-    font-weight: 500;
-    line-height: 1.35;
-    margin-bottom: 0.3rem;
-  }
-
-  .post-title a {
-    color: var(--color-text-primary);
-    text-decoration: none;
-    transition: color 200ms ease;
-  }
-
-  .post-title a:hover {
-    color: var(--color-accent);
-  }
-
-  html:not(.dark) .post-title a {
-    color: var(--color-light-text-primary);
-  }
-
-  html:not(.dark) .post-title a:hover {
-    color: var(--color-accent);
-  }
-
-  .post-desc {
-    color: var(--color-text-secondary);
-    font-size: 0.9rem;
-    line-height: 1.6;
-    max-width: 60ch;
-  }
-
-  html:not(.dark) .post-desc {
-    color: var(--color-light-text-secondary);
-  }
-
-  /* ---- Sidebar ---- */
-  .home-sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
   }
 
   @media (min-width: 768px) {
-    .home-sidebar {
-      position: sticky;
-      top: 5rem;
-      align-self: start;
+    .hero-title {
+      font-size: 2.5rem;
     }
   }
 
-  .sidebar-widget {
-    background-color: var(--color-bg-secondary);
-    border: 1px solid var(--color-border);
-    border-radius: 0.5rem;
-    padding: 1.25rem;
+  .hero-subtitle {
+    font-family: var(--font-serif);
+    color: var(--color-text-secondary);
+    font-size: 1.05rem;
+    max-width: 42ch;
+    margin: 0 auto;
+    line-height: 1.7;
   }
 
-  html:not(.dark) .sidebar-widget {
-    background-color: var(--color-light-bg-secondary);
+  html:not(.dark) .hero-subtitle {
+    color: var(--color-light-text-secondary);
+  }
+
+  .hero-divider {
+    margin: 2rem auto;
+    color: var(--color-text-muted);
+    font-size: 1.25rem;
+    user-select: none;
+  }
+
+  html:not(.dark) .hero-divider {
+    color: var(--color-light-text-muted);
+  }
+
+  .hero-quote {
+    max-width: 40ch;
+    margin: 0 auto 2rem;
+    padding: 0;
+    border: none;
+    text-align: center;
+  }
+
+  .hero-quote p {
+    font-family: var(--font-serif);
+    font-style: italic;
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    line-height: 1.7;
+    margin-bottom: 0.4rem;
+  }
+
+  html:not(.dark) .hero-quote p {
+    color: var(--color-light-text-muted);
+  }
+
+  .hero-quote cite {
+    font-family: var(--font-serif);
+    font-style: normal;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    letter-spacing: 0.03em;
+  }
+
+  html:not(.dark) .hero-quote cite {
+    color: var(--color-light-text-muted);
+  }
+
+  .hero-nav {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .hero-nav-link {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    font-family: var(--font-serif);
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: 2rem;
+    text-decoration: none;
+    transition: color var(--transition-base), border-color var(--transition-base), background-color var(--transition-base);
+  }
+
+  .hero-nav-link:hover {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+    background-color: rgba(155, 123, 91, 0.06);
+  }
+
+  html:not(.dark) .hero-nav-link {
+    color: var(--color-light-text-secondary);
     border-color: var(--color-light-border);
   }
 
-  .sidebar-heading {
+  html:not(.dark) .hero-nav-link:hover {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+    background-color: rgba(155, 123, 91, 0.06);
+  }
+
+  /* ══════════════════════════════════════
+     Section headings (small-caps bar)
+     ══════════════════════════════════════ */
+  .section-heading {
     font-family: var(--font-display);
     font-size: 0.8rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: var(--color-accent);
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
     padding-bottom: 0.5rem;
     border-bottom: 1px solid var(--color-border);
   }
 
-  html:not(.dark) .sidebar-heading {
+  html:not(.dark) .section-heading {
     border-bottom-color: var(--color-light-border);
   }
 
-  /* Stats */
-  .stats-grid {
-    display: flex;
-    gap: 2rem;
-  }
-
-  .stat-item {
+  /* ══════════════════════════════════════
+     Section 2: Featured Notes
+     ══════════════════════════════════════ */
+  .featured-list {
     display: flex;
     flex-direction: column;
+    gap: 1rem;
+  }
+
+  .featured-card {
+    display: block;
+    padding: 1.25rem;
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-left: 3px solid var(--color-accent-muted);
+    border-radius: 0.5rem;
+    text-decoration: none;
+    transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
+  }
+
+  .featured-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    border-color: var(--color-accent-muted);
+  }
+
+  html:not(.dark) .featured-card {
+    background-color: var(--color-light-bg-secondary);
+    border-color: var(--color-light-border);
+  }
+
+  html:not(.dark) .featured-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    border-color: var(--color-accent-muted);
+  }
+
+  .featured-card-header {
+    display: flex;
     align-items: center;
-    gap: 0.15rem;
-  }
-
-  .stat-number {
-    font-family: var(--font-display);
-    font-size: 1.75rem;
-    font-weight: 500;
-    color: var(--color-text-primary);
-    line-height: 1;
-  }
-
-  html:not(.dark) .stat-number {
-    color: var(--color-light-text-primary);
-  }
-
-  .stat-label {
-    font-size: 0.75rem;
+    gap: 0.6rem;
+    margin-bottom: 0.4rem;
+    font-size: 0.8rem;
     color: var(--color-text-muted);
-    letter-spacing: 0.02em;
   }
 
-  html:not(.dark) .stat-label {
+  html:not(.dark) .featured-card-header {
     color: var(--color-light-text-muted);
   }
 
-  /* Tag Cloud */
-  .tag-cloud {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem 0.6rem;
-    line-height: 1.8;
-  }
-
-  .tag-item {
-    color: var(--color-text-secondary);
-    transition: color 200ms ease;
-    cursor: default;
-  }
-
-  .tag-item:hover {
-    color: var(--color-accent);
-  }
-
-  html:not(.dark) .tag-item {
-    color: var(--color-light-text-secondary);
-  }
-
-  html:not(.dark) .tag-item:hover {
-    color: var(--color-accent);
-  }
-
-  /* Random Reads */
-  .random-list {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 1rem 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-  }
-
-  .random-link {
-    font-size: 0.9rem;
-    color: var(--color-text-secondary);
-    text-decoration: none;
-    transition: color 200ms ease;
-    line-height: 1.4;
-    display: block;
-  }
-
-  .random-link:hover {
-    color: var(--color-accent);
-  }
-
-  html:not(.dark) .random-link {
-    color: var(--color-light-text-secondary);
-  }
-
-  html:not(.dark) .random-link:hover {
-    color: var(--color-accent);
-  }
-
-  .surprise-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.4rem 0.85rem;
-    font-family: var(--font-serif);
-    font-size: 0.8rem;
-    color: var(--color-accent);
-    background-color: transparent;
-    border: 1px solid var(--color-accent-muted);
-    border-radius: 0.35rem;
-    cursor: pointer;
-    transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
-  }
-
-  .surprise-btn:hover {
-    background-color: var(--color-accent);
-    border-color: var(--color-accent);
-    color: var(--color-bg-primary);
-  }
-
-  html:not(.dark) .surprise-btn:hover {
-    color: #fff;
-  }
-
-  .hidden {
-    display: none !important;
-  }
-</style>
-
-<!-- Dynamic search result styles (for innerHTML-generated content) -->
-<style is:global>
-  .result-item {
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .result-item:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-  }
-
-  html:not(.dark) .result-item {
-    border-bottom-color: var(--color-light-border);
-  }
-
-  .result-meta {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.35rem;
-    font-size: 0.8rem;
-  }
-
-  .result-type {
+  .featured-note-id {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
     padding: 0.1rem 0.4rem;
     border-radius: 0.2rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    letter-spacing: 0.03em;
-  }
-
-  .result-type-core {
-    background-color: rgba(155, 123, 91, 0.15);
-    color: var(--color-accent);
-  }
-
-  .result-type-marginalia {
-    background-color: #9b9b5b20;
-    color: #9b9b5b;
-  }
-
-  .result-series {
-    font-style: italic;
+    background-color: var(--color-bg-tertiary);
     color: var(--color-text-muted);
   }
 
-  html:not(.dark) .result-series {
+  html:not(.dark) .featured-note-id {
+    background-color: var(--color-light-bg-tertiary);
     color: var(--color-light-text-muted);
   }
 
-  .result-series::before {
+  .featured-series {
+    font-style: italic;
+  }
+
+  .featured-series::before {
     content: " · ";
     font-style: normal;
   }
 
-  .result-title {
+  .featured-title {
     font-family: var(--font-display);
     font-size: 1.2rem;
     font-weight: 500;
     line-height: 1.35;
-    margin-bottom: 0.25rem;
-  }
-
-  .result-title a {
     color: var(--color-text-primary);
-    text-decoration: none;
-    transition: color 200ms ease;
+    margin-bottom: 0.3rem;
   }
 
-  .result-title a:hover {
-    color: var(--color-accent);
-  }
-
-  html:not(.dark) .result-title a {
+  html:not(.dark) .featured-title {
     color: var(--color-light-text-primary);
   }
 
-  html:not(.dark) .result-title a:hover {
+  .featured-card:hover .featured-title {
     color: var(--color-accent);
   }
 
-  .result-desc {
-    color: var(--color-text-secondary);
+  .featured-desc {
     font-size: 0.9rem;
+    color: var(--color-text-secondary);
     line-height: 1.6;
     max-width: 60ch;
   }
 
-  html:not(.dark) .result-desc {
+  html:not(.dark) .featured-desc {
     color: var(--color-light-text-secondary);
+  }
+
+  /* ══════════════════════════════════════
+     Section 3: Subject Map
+     ══════════════════════════════════════ */
+  .subject-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  @media (min-width: 768px) {
+    .subject-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .subject-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 1rem;
+    background-color: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    text-decoration: none;
+    transition: border-color var(--transition-base), transform var(--transition-base);
+  }
+
+  .subject-tile:hover {
+    border-color: var(--color-accent-muted);
+    transform: translateY(-1px);
+  }
+
+  html:not(.dark) .subject-tile {
+    background-color: var(--color-light-bg-secondary);
+    border-color: var(--color-light-border);
+  }
+
+  html:not(.dark) .subject-tile:hover {
+    border-color: var(--color-accent-muted);
+  }
+
+  .subject-tile-empty {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  .subject-tile-empty:hover {
+    transform: none;
+    border-color: var(--color-border);
+  }
+
+  html:not(.dark) .subject-tile-empty:hover {
+    border-color: var(--color-light-border);
+  }
+
+  .subject-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .subject-name {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    line-height: 1.3;
+  }
+
+  html:not(.dark) .subject-name {
+    color: var(--color-light-text-primary);
+  }
+
+  .subject-count {
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+  }
+
+  html:not(.dark) .subject-count {
+    color: var(--color-light-text-muted);
+  }
+
+  .subject-soon {
+    font-size: 0.78rem;
+    font-style: italic;
+    color: var(--color-text-muted);
+  }
+
+  html:not(.dark) .subject-soon {
+    color: var(--color-light-text-muted);
+  }
+
+  /* ══════════════════════════════════════
+     Section 4: Latest Activity
+     ══════════════════════════════════════ */
+  .latest-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .latest-item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .latest-item:last-child {
+    border-bottom: none;
+  }
+
+  html:not(.dark) .latest-item {
+    border-bottom-color: var(--color-light-border);
+  }
+
+  .latest-item time {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+    min-width: 5ch;
+  }
+
+  html:not(.dark) .latest-item time {
+    color: var(--color-light-text-muted);
+  }
+
+  .latest-title {
+    flex: 1;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    text-decoration: none;
+    transition: color var(--transition-base);
+    line-height: 1.35;
+  }
+
+  .latest-title:hover {
+    color: var(--color-accent);
+  }
+
+  html:not(.dark) .latest-title {
+    color: var(--color-light-text-primary);
+  }
+
+  html:not(.dark) .latest-title:hover {
+    color: var(--color-accent);
+  }
+
+  .latest-badge {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.2rem;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .badge-core {
+    background-color: rgba(155, 123, 91, 0.15);
+    color: var(--color-accent);
+  }
+
+  .badge-marginalia {
+    background-color: rgba(155, 155, 91, 0.12);
+    color: #9b9b5b;
+  }
+
+  .view-all-link {
+    display: inline-block;
+    font-family: var(--font-serif);
+    font-size: 0.9rem;
+    color: var(--color-accent);
+    text-decoration: none;
+    transition: color var(--transition-base);
+  }
+
+  .view-all-link:hover {
+    color: var(--color-accent-hover);
+  }
+
+  /* ══════════════════════════════════════
+     Section 5: Colophon
+     ══════════════════════════════════════ */
+  .colophon {
+    padding-top: 1rem;
+  }
+
+  .colophon-text {
+    color: var(--color-text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.7;
+    margin-bottom: 0.75rem;
+  }
+
+  html:not(.dark) .colophon-text {
+    color: var(--color-light-text-secondary);
+  }
+
+  .colophon-built {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    letter-spacing: 0.02em;
+  }
+
+  html:not(.dark) .colophon-built {
+    color: var(--color-light-text-muted);
   }
 </style>
