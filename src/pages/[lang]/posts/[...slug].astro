@@ -1,5 +1,4 @@
 ---
-export const prerender = true;
 import { getCollection, render } from "astro:content";
 import PostLayout from "../../../layouts/PostLayout.astro";
 import type { Lang } from "../../../i18n/translations";
@@ -32,7 +31,6 @@ const { Content } = await render(post);
   noteId={post.data.noteId}
   category={post.data.category}
   lang={lang as Lang}
-  sourceLang={post.data.lang as Lang}
 >
   <Content />
 </PostLayout>

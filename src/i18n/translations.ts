@@ -66,11 +66,6 @@ export const translations: Record<Lang, Record<string, string>> = {
     "sidebar.stats.series": "个专栏",
     "sidebar.randomBtn": "随便看看",
     "lang.switch": "English",
-    "translate.button": "翻译为英文",
-    "translate.buttonBack": "显示原文",
-    "translate.loading": "正在翻译...",
-    "translate.error": "翻译失败，请稍后再试",
-    "translate.poweredBy": "由 DeepL 翻译",
   },
   en: {
     "site.title": "Mooringbridge Notes",
@@ -130,11 +125,6 @@ export const translations: Record<Lang, Record<string, string>> = {
     "sidebar.stats.series": "series",
     "sidebar.randomBtn": "Surprise Me",
     "lang.switch": "中文",
-    "translate.button": "Translate to Chinese",
-    "translate.buttonBack": "Show original",
-    "translate.loading": "Translating...",
-    "translate.error": "Translation failed. Please try again.",
-    "translate.poweredBy": "Translated by DeepL",
   },
 };
 

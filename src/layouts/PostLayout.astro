@@ -3,8 +3,9 @@ import BaseLayout from "./BaseLayout.astro";
 import type { Lang } from "../i18n/translations";
 import { seriesNames, categoryNames } from "../i18n/translations";
 import { t, formatDate, getLangFromUrl, localizedPath } from "../i18n/utils";
+import { switchLangPath } from "../i18n/utils";
 
-interface Props {
+  interface Props {
   title: string;
   description: string;
   pubDate: Date;
@@ -20,7 +21,6 @@ interface Props {
   noteId?: string;
   category?: string;
   lang?: Lang;
-  sourceLang?: Lang;
 }
 
 const {
@@ -38,7 +38,8 @@ const {
 } = Astro.props;
 
 const lang = Astro.props.lang || getLangFromUrl(Astro.url);
-const sourceLang = Astro.props.sourceLang || lang;
+const otherLang: Lang = lang === "zh" ? "en" : "zh";
+const switchHref = switchLangPath(Astro.url.pathname, otherLang);
 const seriesMap = seriesNames[lang];
 const categoryMap = categoryNames[lang];
 
@@ -48,8 +49,7 @@ const formattedUpdatedDate = updatedDate ? formatDate(updatedDate, lang) : null;
 const seriesLabel = series ? seriesMap[series] || series : null;
 const categoryLabel = category ? categoryMap[category] || category : null;
 
-// Determine translate button label based on source language
-const translateLabel = sourceLang === "zh" ? t(lang, "translate.button") : t(lang, "translate.button");
+const switchLabel = lang === "zh" ? "EN" : "中文";
 ---
 
 <BaseLayout
@@ -87,16 +87,10 @@ const translateLabel = sourceLang === "zh" ? t(lang, "translate.button") : t(lan
         <h1 class="article-title">
           {title}
         </h1>
-        <button
-          id="translate-btn"
+        <a
+          href={switchHref}
           class="translate-btn"
-          data-source-lang={sourceLang}
-          data-page-lang={lang}
-          data-text-translate={sourceLang === "zh" ? (lang === "zh" ? "翻译为英文" : "Translate to English") : (lang === "zh" ? "翻译为中文" : "Translate to Chinese")}
-          data-text-back={t(lang, "translate.buttonBack")}
-          data-text-loading={t(lang, "translate.loading")}
-          data-text-error={t(lang, "translate.error")}
-          data-text-powered={t(lang, "translate.poweredBy")}
+          aria-label={`Switch to ${otherLang === "en" ? "English" : "中文"}`}
         >
           <svg class="translate-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M5 8l6 6" />
@@ -106,8 +100,8 @@ const translateLabel = sourceLang === "zh" ? t(lang, "translate.button") : t(lan
             <path d="M22 22l-5-10-5 10" />
             <path d="M14 18h6" />
           </svg>
-          <span class="translate-btn-text">{sourceLang === "zh" ? (lang === "zh" ? "翻译为英文" : "Translate to English") : (lang === "zh" ? "翻译为中文" : "Translate to Chinese")}</span>
-        </button>
+          {switchLabel}
+        </a>
       </div>
       
       <p class="article-desc">
@@ -132,9 +126,6 @@ const translateLabel = sourceLang === "zh" ? t(lang, "translate.button") : t(lan
     
     <div class="prose">
       <slot />
-    </div>
-    <div class="translate-attribution hidden" id="translate-attribution">
-      {t(lang, "translate.poweredBy")}
     </div>
     
     <footer class="mt-16 pt-8 border-t border-[var(--color-border)]">
@@ -164,113 +155,26 @@ const translateLabel = sourceLang === "zh" ? t(lang, "translate.button") : t(lan
 </BaseLayout>
 
 <script>
-  function initPostPage() {
-    // Scroll to top
-    document.getElementById("scroll-to-top")?.addEventListener("click", () => {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
+  document.getElementById("scroll-to-top")?.addEventListener("click", () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
 
-    // Reading progress bar
-    const progressBar = document.getElementById("reading-progress");
-    if (progressBar) {
-      const updateProgress = () => {
-        const scrollTop = window.scrollY;
-        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-        const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
-        progressBar.style.width = `${Math.min(progress, 100)}%`;
-      };
+  // Reading progress bar
+  const progressBar = document.getElementById("reading-progress");
+  if (progressBar) {
+    const updateProgress = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      progressBar.style.width = `${Math.min(progress, 100)}%`;
+    };
+    window.addEventListener("scroll", updateProgress, { passive: true });
+    updateProgress();
+    document.addEventListener("astro:after-swap", () => {
       window.addEventListener("scroll", updateProgress, { passive: true });
       updateProgress();
-    }
-
-    // ── Translation Logic ──────────────────────────────────────────────
-    const translateBtn = document.getElementById("translate-btn") as HTMLButtonElement | null;
-    const proseEl = document.querySelector(".prose") as HTMLElement | null;
-    const attribution = document.getElementById("translate-attribution");
-    const btnText = translateBtn?.querySelector(".translate-btn-text");
-
-    if (!translateBtn || !proseEl || !btnText) return;
-
-    let originalContent: string | null = null;
-    let isTranslated = false;
-
-    const textTranslate = translateBtn.dataset.textTranslate || "Translate";
-    const textBack = translateBtn.dataset.textBack || "Show original";
-    const textLoading = translateBtn.dataset.textLoading || "Translating...";
-    const textError = translateBtn.dataset.textError || "Translation failed";
-    const sourceLang = translateBtn.dataset.sourceLang || "zh";
-
-    // Determine target language (opposite of source)
-    const targetLang = sourceLang === "zh" ? "EN" : "ZH";
-
-    translateBtn.addEventListener("click", async () => {
-      // Toggle back to original
-      if (isTranslated && originalContent !== null) {
-        proseEl.innerHTML = originalContent;
-        originalContent = null;
-        isTranslated = false;
-        btnText.textContent = textTranslate;
-        translateBtn.classList.remove("translated");
-        attribution?.classList.add("hidden");
-        return;
-      }
-
-      // Save original and start translating
-      originalContent = proseEl.innerHTML;
-      translateBtn.disabled = true;
-      translateBtn.classList.add("loading");
-      btnText.textContent = textLoading;
-
-      try {
-        const res = await fetch("/api/translate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text: originalContent,
-            sourceLang: sourceLang.toUpperCase(),
-            targetLang,
-          }),
-        });
-
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-
-        const data = await res.json();
-
-        if (data.translatedText) {
-          proseEl.innerHTML = data.translatedText;
-          isTranslated = true;
-          btnText.textContent = textBack;
-          translateBtn.classList.add("translated");
-          attribution?.classList.remove("hidden");
-        } else {
-          throw new Error("Empty translation");
-        }
-      } catch (err) {
-        console.error("Translation error:", err);
-        // Restore original on error
-        if (originalContent) {
-          proseEl.innerHTML = originalContent;
-          originalContent = null;
-        }
-        btnText.textContent = textError;
-        translateBtn.classList.add("error");
-        setTimeout(() => {
-          btnText.textContent = textTranslate;
-          translateBtn.classList.remove("error");
-        }, 3000);
-      } finally {
-        translateBtn.disabled = false;
-        translateBtn.classList.remove("loading");
-      }
     });
   }
-
-  // Run on initial load
-  initPostPage();
-  // Re-run after View Transitions navigation
-  document.addEventListener("astro:after-swap", initPostPage);
 </script>
 
 <style>
@@ -375,7 +279,7 @@ const translateLabel = sourceLang === "zh" ? t(lang, "translate.button") : t(lan
     background-color: var(--color-bg-tertiary);
     border: 1px solid var(--color-border);
     border-radius: 0.3rem;
-    cursor: pointer;
+    text-decoration: none;
     transition: all 200ms ease;
     white-space: nowrap;
     flex-shrink: 0;
@@ -386,31 +290,6 @@ const translateLabel = sourceLang === "zh" ? t(lang, "translate.button") : t(lan
     color: var(--color-accent);
     border-color: var(--color-accent-muted);
     background-color: rgba(155, 123, 91, 0.08);
-  }
-
-  .translate-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .translate-btn.loading {
-    animation: pulse 1.5s ease-in-out infinite;
-  }
-
-  .translate-btn.translated {
-    color: var(--color-accent);
-    border-color: var(--color-accent);
-    background-color: rgba(155, 123, 91, 0.1);
-  }
-
-  .translate-btn.error {
-    color: #c4584a;
-    border-color: #c4584a40;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
   }
 
   .translate-icon {
@@ -427,29 +306,5 @@ const translateLabel = sourceLang === "zh" ? t(lang, "translate.button") : t(lan
     color: var(--color-accent);
     border-color: var(--color-accent-muted);
     background-color: rgba(155, 123, 91, 0.06);
-  }
-
-  html:not(.dark) .translate-btn.translated {
-    color: var(--color-accent);
-    border-color: var(--color-accent);
-    background-color: rgba(155, 123, 91, 0.08);
-  }
-
-  /* Translation attribution */
-  .translate-attribution {
-    margin-top: 1rem;
-    padding: 0.5rem 0;
-    font-size: 0.75rem;
-    color: var(--color-text-muted);
-    font-style: italic;
-    text-align: right;
-  }
-
-  html:not(.dark) .translate-attribution {
-    color: var(--color-light-text-muted);
-  }
-
-  .hidden {
-    display: none !important;
   }
 </style>

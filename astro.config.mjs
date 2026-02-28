@@ -1,6 +1,5 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
-import node from '@astrojs/node';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
@@ -9,8 +8,7 @@ import rehypeMathjax from 'rehype-mathjax';
 import vitePluginLatexEnv from './plugins/vite-plugin-latex-env.mjs';
 // https://astro.build/config
 export default defineConfig({
-  output: 'server',
-  adapter: node({ mode: 'standalone' }),
+  site: 'https://yourblog.com',
   site: 'https://yourblog.com',
   i18n: {
     locales: ['zh', 'en'],
