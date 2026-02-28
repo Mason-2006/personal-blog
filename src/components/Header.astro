@@ -13,7 +13,6 @@ const lang = Astro.props.lang || getLangFromUrl(Astro.url);
 
 const navLinks = [
   { href: localizedPath(lang, "/"), label: t(lang, "nav.home") },
-  { href: localizedPath(lang, "/posts"), label: t(lang, "nav.posts") },
   { href: localizedPath(lang, "/notes"), label: t(lang, "nav.notes") },
   { href: localizedPath(lang, "/marginalia"), label: t(lang, "nav.marginalia") },
   { href: localizedPath(lang, "/about"), label: t(lang, "nav.about") },
@@ -24,9 +23,8 @@ const currentPath = Astro.url.pathname;
 
 <header class="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg-primary)]/80 backdrop-blur-md">
   <nav class="container-wide flex items-center justify-between h-16">
-    <a href={localizedPath(lang, "/")} class="brand-link" style="font-family: var(--font-display); font-weight: 500; letter-spacing: 0.02em;">
-      <span class="sr-only">Home</span>
-      <span aria-hidden="true">{t(lang, "brand")}</span>
+    <a href={localizedPath(lang, "/posts")} class="brand-link" style="font-family: var(--font-display); font-weight: 500; letter-spacing: 0.02em;">
+      <span>What's new</span>
     </a>
     
     <div class="flex items-center gap-6">
