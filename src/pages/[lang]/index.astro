@@ -190,24 +190,30 @@ function getPostColor(post: (typeof sortedPosts)[number]): string {
 </BaseLayout>
 
 <script is:inline>
-  (function () {
+  function initScrollAnimations() {
+    var elements = document.querySelectorAll('.animate-on-scroll');
+    if (!elements.length) return;
     var observer = new IntersectionObserver(
       function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) {
-            entry.target.classList.add("visible");
+            entry.target.classList.add('visible');
             observer.unobserve(entry.target);
           }
         });
       },
       { threshold: 0.08 }
     );
-    document
-      .querySelectorAll(".animate-on-scroll")
-      .forEach(function (el) {
-        observer.observe(el);
-      });
-  })();
+    elements.forEach(function (el) {
+      // Reset in case of View Transition re-visit
+      el.classList.remove('visible');
+      observer.observe(el);
+    });
+  }
+  // Run on initial load
+  initScrollAnimations();
+  // Re-run after Astro View Transitions navigate back
+  document.addEventListener('astro:page-load', initScrollAnimations);
 </script>
 
 <style>
