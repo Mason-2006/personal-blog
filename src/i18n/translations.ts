@@ -43,7 +43,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     "about.interests.phil": "哲学",
     "about.interests.calligraphy": "书法",
     "about.tech.title": "技术栈",
-    "about.tech.desc": "本站使用 {astro} 和 {tailwind} 构建。数学公式通过 KaTeX 在构建时渲染 — 浏览器端无需加载 JavaScript。文章使用 MDX 编写。感谢chatgpt和claudecode的技术支持。",
+    "about.tech.desc": "本站使用 {astro} 和 {tailwind} 构建。数学公式通过 KaTeX 在构建时渲染 — 浏览器端无需加载 JavaScript 即可显示公式。文章使用 MDX 编写。感谢 ChatGPT 和 ClaudeCode 提供的技术支持。",
     "about.contact.title": "联系方式",
     "posts.title": "所有文章",
     "posts.entries": "篇文章",

@@ -8,6 +8,16 @@ export function getStaticPaths() {
 }
 
 const lang = Astro.params.lang as Lang;
+const techDesc = t(lang, "about.tech.desc");
+const techDescWithLinks = techDesc
+  .replace(
+    "{astro}",
+    '<a href="https://astro.build" target="_blank" rel="noopener">Astro</a>'
+  )
+  .replace(
+    "{tailwind}",
+    '<a href="https://tailwindcss.com" target="_blank" rel="noopener">Tailwind CSS</a>'
+  );
 ---
 
 <BaseLayout
@@ -50,17 +60,7 @@ const lang = Astro.params.lang as Lang;
 
       <h2>{t(lang, "about.tech.title")}</h2>
 
-      <p>
-        {lang === "zh" ? (
-          <>
-            本站使用 <a href="https://astro.build" target="_blank" rel="noopener">Astro</a> 和 <a href="https://tailwindcss.com" target="_blank" rel="noopener">Tailwind CSS</a> 构建。数学公式通过 KaTeX 在构建时渲染 — 浏览器端无需加载 JavaScript。文章使用 MDX 编写。
-          </>
-        ) : (
-          <>
-            Built with <a href="https://astro.build" target="_blank" rel="noopener">Astro</a> and <a href="https://tailwindcss.com" target="_blank" rel="noopener">Tailwind CSS</a>. Mathematics is rendered with KaTeX at build time — no client-side JavaScript is required to display formulae. Articles are written in MDX.
-          </>
-        )}
-      </p>
+      <p set:html={techDescWithLinks} />
 
       <h2>{t(lang, "about.contact.title")}</h2>
 
