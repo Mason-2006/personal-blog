@@ -1,9 +1,9 @@
 ---
 import BaseLayout from "../../../layouts/BaseLayout.astro";
-import { getCollection } from "astro:content";
 import type { Lang } from "../../../i18n/translations";
 import { categoryNames } from "../../../i18n/translations";
 import { t, formatDate } from "../../../i18n/utils";
+import { getPostsByLang, getBaseSlug } from "../../../lib/i18n-posts";
 
 export function getStaticPaths() {
   return [{ params: { lang: "zh" } }, { params: { lang: "en" } }];
@@ -11,7 +11,7 @@ export function getStaticPaths() {
 
 const lang = Astro.params.lang as Lang;
 
-const allPosts = await getCollection("blog", ({ data }) => !data.draft);
+const allPosts = await getPostsByLang(lang);
 const marginalia = allPosts
   .filter((p) => p.data.type === "marginalia")
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
@@ -49,7 +49,7 @@ const categories = categoryNames[lang];
                 )}
               </div>
               <h2 class="post-title">
-                <a href={`/${lang}/posts/${post.id}`}>{post.data.title}</a>
+                <a href={`/${lang}/posts/${getBaseSlug(post.id)}`}>{post.data.title}</a>
               </h2>
               <p class="post-desc">{post.data.description}</p>
             </article>

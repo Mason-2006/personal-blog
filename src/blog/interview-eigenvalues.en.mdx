@@ -1,0 +1,47 @@
+---
+title: "A Quick Proof that Eigenvalues of a Real Symmetric Matrix are Real(ai templete Not the content of the notes  will be )"
+description: "A short, self-contained proof using the complex inner product -- a common interview question in linear algebra."
+pubDate: 2026-02-21
+author: "Author"
+tags: ["Mathematics", "Linear Algebra"]
+type: "marginalia"
+lang: "en"
+category: "interview"
+featured: true
+---
+
+import NoteSection from '../components/NoteSection.astro';
+
+This is a standard result, but the proof is short enough to be worth recording.
+
+<NoteSection type="theorem" title="Eigenvalues of Real Symmetric Matrices">
+
+Let $A \in \mathbb{R}^{n \times n}$ be symmetric (i.e. $A = A^T$). Then every eigenvalue of $A$ is real.
+
+</NoteSection>
+
+<NoteSection type="proof">
+
+Let $\lambda$ be an eigenvalue with (possibly complex) eigenvector $v \neq 0$, so $Av = \lambda v$. Consider the complex inner product $\langle u, w \rangle = \bar{u}^T w$.
+
+Compute:
+
+$$
+\langle v, Av \rangle = \langle v, \lambda v \rangle = \lambda \langle v, v \rangle = \lambda \|v\|^2
+$$
+
+On the other hand, since $A$ is real and symmetric ($A = A^T = \bar{A}^T$):
+
+$$
+\langle v, Av \rangle = \langle Av, v \rangle = \overline{\langle v, Av \rangle}
+$$
+
+Therefore $\langle v, Av \rangle$ is real. Since $\|v\|^2 > 0$, we conclude $\lambda = \langle v, Av \rangle / \|v\|^2$ is real.
+
+</NoteSection>
+
+<NoteSection type="remark">
+
+The same argument, with minor modifications, shows that eigenvectors corresponding to *distinct* eigenvalues of a real symmetric matrix are orthogonal. This is the starting point of the spectral theorem.
+
+</NoteSection>

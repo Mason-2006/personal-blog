@@ -1,6 +1,6 @@
 ---
 import type { Lang } from "../i18n/translations";
-import { getLangFromUrl } from "../i18n/utils";
+import { getLangFromUrl, t } from "../i18n/utils";
 
 interface Props {
   lang?: Lang;
@@ -14,7 +14,7 @@ const currentYear = new Date().getFullYear();
   <div class="container-narrow py-8">
     <div class="flex items-center justify-between">
       <p class="text-sm text-[var(--color-text-muted)]">
-        &copy; {currentYear} {lang === "zh" ? "泊桥" : "Mooringbridge"}
+        &copy; {currentYear} {t(lang, "brand")}
       </p>
       
       <div class="flex items-center gap-4">

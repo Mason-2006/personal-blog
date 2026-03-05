@@ -1,20 +1,28 @@
 ---
-import { getCollection, render } from "astro:content";
+import { render } from "astro:content";
 import PostLayout from "../../../layouts/PostLayout.astro";
 import type { Lang } from "../../../i18n/translations";
+import { buildTranslationMap, getBaseSlug } from "../../../lib/i18n-posts";
 
 export async function getStaticPaths() {
-  const posts = await getCollection("blog", ({ data }) => !data.draft);
-  const langs = ["zh", "en"] as const;
-  return langs.flatMap((lang) =>
-    posts.map((post) => ({
-      params: { lang, slug: post.id },
-      props: { post, lang },
-    }))
-  );
+  const translationMap = await buildTranslationMap();
+  const paths = [];
+
+  for (const [baseSlug, langMap] of translationMap) {
+    for (const [lang, post] of langMap) {
+      const otherLang: Lang = lang === "zh" ? "en" : "zh";
+      const hasTranslation = langMap.has(otherLang);
+      paths.push({
+        params: { lang, slug: baseSlug },
+        props: { post, lang, hasTranslation, baseSlug },
+      });
+    }
+  }
+
+  return paths;
 }
 
-const { post, lang } = Astro.props;
+const { post, lang, hasTranslation, baseSlug } = Astro.props;
 const { Content } = await render(post);
 ---
 
@@ -31,6 +39,8 @@ const { Content } = await render(post);
   noteId={post.data.noteId}
   category={post.data.category}
   lang={lang as Lang}
+  hasTranslation={hasTranslation}
+  baseSlug={baseSlug}
 >
   <Content />
 </PostLayout>

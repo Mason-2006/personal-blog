@@ -1,162 +1,39 @@
-export const languages = {
-  zh: "中文",
-  en: "English",
-} as const;
+import { defaultLang, type Lang, languages } from "./config";
+import { about } from "./pages/about";
+import { common } from "./pages/common";
+import { home } from "./pages/home";
+import { marginalia } from "./pages/marginalia";
+import { notes } from "./pages/notes";
+import { posts } from "./pages/posts";
 
-export type Lang = keyof typeof languages;
+export { defaultLang, type Lang, languages };
 
-export const defaultLang: Lang = "zh";
+const merge = (...sources: Array<Record<Lang, Record<string, string>>>) => {
+  const merged = (Object.keys(languages) as Lang[]).reduce(
+    (acc, lang) => {
+      acc[lang] = {};
+      return acc;
+    },
+    {} as Record<Lang, Record<string, string>>,
+  );
 
-export const translations: Record<Lang, Record<string, string>> = {
-  zh: {
-    "site.title": "泊桥",
-    "site.description": "一个关于数学与物理的笔记本。",
-    "nav.home": "首页",
-    "nav.notes": "笔记",
-    "nav.marginalia": "随记",
-    "nav.about": "关于",
-    "nav.posts": "所有文章",
-    "brand": "泊桥",
-    "home.title": "泊桥笔记",
-    "home.subtitle": "一本正在书写的数学与物理笔记本。记录学习，整理思考。",
-    "notes.title": "核心笔记",
-    "notes.subtitle": "按学科组织的讲义式笔记。",
-    "marginalia.title": "随记",
-    "marginalia.subtitle": "短篇：面试题、独立证明、偶尔的思考。",
-    "about.title": "关于",
-    "about.description": "关于泊桥 — 一个数学、物理与计算机笔记本。",
-    "about.intro": "你好，我是",
-    "about.name": "泊桥",
-    "about.identity": "一个对数学、物理、计算机和哲学充满好奇心的学生。",
-    "about.motto": "从记忆之中，生出知识。",
-    "about.site.title": "关于本站(测试版本)",
-    "about.site.desc": "这是一个我用来记录生活与学习、整理笔记的个人笔记本，也希望能给他人带来帮助。笔记分为两类：",
-    "about.site.core": "核心笔记",
-    "about.site.core.desc": "按学科组织的讲义式长文；",
-    "about.site.marginalia": "随记",
-    "about.site.marginalia.desc": "短篇 — 独立证明、偶尔的思考。",
-    "about.current.title": "当前工作",
-    "about.current.desc": "我正在整理复分析的笔记。未来计划包括系统整理理论物理的内容、探索 Linux 工作原理，以及一些生活中的 tips。",
-    "about.interests.title": "兴趣与爱好",
-    "about.interests.math": "数学与物理",
-    "about.interests.cs": "计算机科学",
-    "about.interests.phil": "哲学",
-    "about.interests.calligraphy": "书法",
-    "about.tech.title": "技术栈",
-    "about.tech.desc": "本站使用 {astro} 和 {tailwind} 构建。数学公式通过 KaTeX 在构建时渲染 — 浏览器端无需加载 JavaScript 即可显示公式。文章使用 MDX 编写。感谢 ChatGPT 和 ClaudeCode 提供的技术支持。",
-    "about.contact.title": "联系方式",
-    "posts.title": "所有文章",
-    "posts.entries": "篇文章",
-    "posts.backToAll": "返回所有笔记",
-    "posts.top": "顶部",
-    "posts.readMore": "阅读全文",
-    "posts.updated": "更新于",
-    "posts.noCorePosts": "暂无核心笔记。",
-    "posts.noMarginalia": "暂无随记。",
-    "posts.noPosts": "暂无文章。",
-    "search.placeholder": "搜索笔记与随记...",
-    "search.noResults": "未找到匹配的结果。",
-    "search.label": "搜索",
-    "notes.entriesCount": "篇笔记",
-    "notes.expand": "展开",
-    "notes.collapse": "收起",
-    "sidebar.tags": "标签云",
-    "sidebar.random": "随机阅读",
-    "sidebar.stats": "笔记统计",
-    "sidebar.stats.total": "篇笔记",
-    "sidebar.stats.series": "个专栏",
-    "sidebar.randomBtn": "随便看看",
-    "lang.switch": "English",
-    "home.quote": "我没有什么特别的天赋，只是充满热情地保持好奇。",
-    "home.quote.attr": "— 阿尔伯特·爱因斯坦",
-    "home.featured": "精选笔记",
-    "home.subjects": "学科领域",
-    "home.subjects.notes": "篇笔记",
-    "home.subjects.soon": "即将推出",
-    "home.latest": "最新动态",
-    "home.latest.viewAll": "查看全部文章 →",
-    "home.currently": "近况",
-    "home.currently.desc": "正在整理复分析的笔记。下一步计划：理论物理、Linux 内核与生活小记。",
-    "home.builtWith": "使用 Astro · KaTeX · MDX 构建",
-    "home.nav.notes": "核心笔记 →",
-    "home.nav.marginalia": "随记 →",
-    "home.nav.about": "关于我 →",
-  },
-  en: {
-    "site.title": "Mooringbridge",
-    "site.description": "A notebook for mathematics and physics.",
-    "nav.home": "Home",
-    "nav.notes": "Notes",
-    "nav.marginalia": "Marginalia",
-    "nav.about": "About",
-    "nav.posts": "All Posts",
-    "brand": "Mooringbridge",
-    "home.title": "Mooringbridge Notes",
-    "home.subtitle": "A mathematics & physics notebook in progress. Part study log, part thinking space.",
-    "notes.title": "Core Notes",
-    "notes.subtitle": "Lecture-style notes organised by subject.",
-    "marginalia.title": "Marginalia",
-    "marginalia.subtitle": "Shorter pieces: interview problems, standalone proofs, and occasional reflections.",
-    "about.title": "About",
-    "about.description": "About Mooringbridge — a notebook for mathematics, physics, and computer science.",
-    "about.intro": "This is",
-    "about.name": "Mooringbridge",
-    "about.identity": "a student interested in mathematics and theoretical physics.",
-    "about.motto": "Ex Memoria, Scientia",
-    "about.site.title": "This Site(beta)",
-    "about.site.desc": "This is a personal notebook where I record my life and learning, organise my notes, and hopefully help others along the way. The material falls into two categories:",
-    "about.site.core": "core notes",
-    "about.site.core.desc": "longer, lecture-style expositions organised by subject;",
-    "about.site.marginalia": "marginalia",
-    "about.site.marginalia.desc": "shorter pieces — standalone proofs, and occasional reflections.",
-    "about.current.title": "Current Work",
-    "about.current.desc": "I'm currently organising my complex analysis notes. Future plans include systematic theoretical physics content, explorations of Linux internals, and practical life tips.",
-    "about.interests.title": "Interests & Hobbies",
-    "about.interests.math": "Mathematics & Physics",
-    "about.interests.cs": "Computer Science",
-    "about.interests.phil": "Philosophy",
-    "about.interests.calligraphy": "Calligraphy (书法)",
-    "about.tech.title": "About the Site",
-    "about.tech.desc": "Built with {astro} and {tailwind}. Mathematics is rendered with KaTeX at build time — no client-side JavaScript is required to display formulae. Articles are written in MDX.Thank you for the technical support provided by ChatGPT and ClaudeCode.",
-    "about.contact.title": "Contact",
-    "posts.title": "All Posts",
-    "posts.entries": "entries",
-    "posts.backToAll": "Back to all notes",
-    "posts.top": "Top",
-    "posts.readMore": "Read more",
-    "posts.updated": "Updated",
-    "posts.noCorePosts": "No core notes yet.",
-    "posts.noMarginalia": "No marginalia yet.",
-    "posts.noPosts": "No posts yet.",
-    "search.placeholder": "Search notes & marginalia...",
-    "search.noResults": "No matching results found.",
-    "search.label": "Search",
-    "notes.entriesCount": "entries",
-    "notes.expand": "Expand",
-    "notes.collapse": "Collapse",
-    "sidebar.tags": "Tags",
-    "sidebar.random": "Random Read",
-    "sidebar.stats": "Stats",
-    "sidebar.stats.total": "notes",
-    "sidebar.stats.series": "series",
-    "sidebar.randomBtn": "Surprise Me",
-    "lang.switch": "中文",
-    "home.quote": "I have no special talent. I am only passionately curious.",
-    "home.quote.attr": "— Albert Einstein",
-    "home.featured": "Featured Notes",
-    "home.subjects": "Explore by Subject",
-    "home.subjects.notes": "notes",
-    "home.subjects.soon": "Coming soon",
-    "home.latest": "Latest",
-    "home.latest.viewAll": "View all posts →",
-    "home.currently": "Currently",
-    "home.currently.desc": "Organising complex analysis notes. Next up: theoretical physics, Linux internals, and life tips.",
-    "home.builtWith": "Built with Astro · KaTeX · MDX",
-    "home.nav.notes": "Core Notes →",
-    "home.nav.marginalia": "Marginalia →",
-    "home.nav.about": "About Me →",
-  },
+  for (const source of sources) {
+    for (const lang of Object.keys(languages) as Lang[]) {
+      merged[lang] = { ...merged[lang], ...source[lang] };
+    }
+  }
+
+  return merged;
 };
+
+export const translations: Record<Lang, Record<string, string>> = merge(
+  common,
+  home,
+  about,
+  posts,
+  notes,
+  marginalia,
+);
 
 export const seriesNames: Record<Lang, Record<string, string>> = {
   zh: {

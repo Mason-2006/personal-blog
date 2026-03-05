@@ -1,4 +1,5 @@
-import { translations, defaultLang, type Lang } from "./translations";
+import { defaultLang, type Lang } from "./config";
+import { translations } from "./translations";
 
 export function getLangFromUrl(url: URL): Lang {
   const [, lang] = url.pathname.split("/");

@@ -1,6 +1,7 @@
 ---
 import type { Lang } from "../i18n/translations";
 import { t, formatDate, getLangFromUrl } from "../i18n/utils";
+import { getBaseSlug } from "../lib/i18n-posts";
 
 interface Props {
   title: string;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 const { title, description, pubDate, tags = [], slug } = Astro.props;
+const cleanSlug = slug.includes("/") ? getBaseSlug(slug) : slug;
 const lang = Astro.props.lang || getLangFromUrl(Astro.url);
 
 const formattedDate = formatDate(pubDate, lang);
@@ -19,7 +21,7 @@ const formattedDate = formatDate(pubDate, lang);
 
 <article class="group">
   <a
-    href={`/${lang}/posts/${slug}`}
+    href={`/${lang}/posts/${cleanSlug}`}
     class="block p-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-accent)]/50 hover:bg-[var(--color-bg-tertiary)] transition-all duration-200"
   >
     <div class="flex flex-col gap-3">

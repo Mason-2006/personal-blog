@@ -1,9 +1,9 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { getCollection } from "astro:content";
 import type { Lang } from "../../i18n/translations";
 import { seriesNames, seriesColors, categoryColors } from "../../i18n/translations";
 import { t, formatDayMonth } from "../../i18n/utils";
+import { getPostsByLang, getBaseSlug } from "../../lib/i18n-posts";
 
 export function getStaticPaths() {
   return [{ params: { lang: "zh" } }, { params: { lang: "en" } }];
@@ -11,7 +11,7 @@ export function getStaticPaths() {
 
 const lang = Astro.params.lang as Lang;
 
-const allPosts = await getCollection("blog", ({ data }) => !data.draft);
+const allPosts = await getPostsByLang(lang);
 const sortedPosts = allPosts.sort(
   (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
 );
@@ -97,7 +97,7 @@ function getPostColor(post: (typeof sortedPosts)[number]): string {
             : null;
           return (
             <a
-              href={`/${lang}/posts/${post.id}`}
+              href={`/${lang}/posts/${getBaseSlug(post.id)}`}
               class={`featured-card delay-${i + 1}`}
               style={`border-left-color: ${color}`}
             >
@@ -166,7 +166,7 @@ function getPostColor(post: (typeof sortedPosts)[number]): string {
               <time datetime={post.data.pubDate.toISOString()}>
                 {formatDayMonth(post.data.pubDate, lang)}
               </time>
-              <a href={`/${lang}/posts/${post.id}`} class="latest-title">
+              <a href={`/${lang}/posts/${getBaseSlug(post.id)}`} class="latest-title">
                 {post.data.title}
               </a>
               <span class={`latest-badge ${typeClass}`}>{typeLabel}</span>

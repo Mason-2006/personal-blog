@@ -1,0 +1,255 @@
+---
+title: "1. 几何与复数运算"
+description: "通过 Cardano 公式、Euler 公式以及复数运算的几何应用来介绍复数。"
+pubDate: 2026-02-25
+author: "Mooringbridge"
+tags: ["Mathematics", "Complex Analysis"]
+type: "core"
+series: "CX"
+noteId: "CX-001"
+lang: "zh"
+featured: true
+---
+
+## 复数简介
+
+一般三次方程可以表示为：
+
+\begin{equation}
+x=\sqrt[3]{q+\sqrt{q^2-p^3}}+\sqrt[3]{q-\sqrt{q^2-p^3}}
+\end{equation}
+
+Bombelli 曾考虑方程 $x^3=15x+4$，于是得到
+
+\begin{equation}
+x=\sqrt[3]{2+11i}+\sqrt[3]{2-11i}
+\end{equation}
+
+## 欧拉公式
+
+考虑 $e^x,\cos(x),\sin(x)$ 的幂级数展开：
+
+\begin{equation}
+e^x = 1+x+\frac{x^2}{2!}+\frac{x^3}{3!}+\cdots
+\end{equation}
+
+\begin{equation}
+\cos(x) = 1-\frac{x^2}{2!}+\frac{x^4}{4!}-\cdots
+\end{equation}
+
+\begin{equation}
+\sin(x) = x-\frac{x^3}{3!}+\frac{x^5}{5!}-\cdots
+\end{equation}
+
+只需在 $e^x$ 中将 $x$ 替换为 $ix$，并与 $\cos x+i\sin x$ 进行比较，就可以证明
+
+\begin{equation}
+e^{ix}=\cos(x)+i\sin(x)
+\end{equation}
+
+同时还可以得到两个公式：
+
+$\cos(x)=\frac{e^{ix}+e^{-ix}}{2}$  
+$\sin(x)=\frac{e^{ix}-e^{-ix}}{2i}$
+
+---
+
+## 习题
+
+### 三次根公式的推导
+
+\begin{equation}
+Y=X^3+AX^2+BX+C
+\end{equation}
+
+利用平移 $X=x-\frac{A}{3}$（因为这样可以消去拐点处的二次项），从而将问题转化为求解
+
+\begin{equation}
+x^3=3px+2q
+\end{equation}
+
+使用 **Lagrange 预分解**，即进行如下代换：
+
+\begin{align*}
+x&=s+t\\
+st&=p\\
+s^3+t^3&=2q
+\end{align*}
+
+于是得到
+
+\begin{align*}
+ x^3&=3px+2q\\
+ \iff (s+t)^3&=3st(s+t)+(s^3+t^3)
+\end{align*}
+
+接下来问题转化为寻找满足这些关系的 $s$ 和 $t$。假设 $st=p$ 成立，并利用 $s^3+t^3=2q$ 来构造方程。由于
+
+$t=\frac{p}{s}$
+
+于是
+
+\begin{align*}
+s^3+t^3&=2q\\
+\iff s^3+\frac{p^3}{s^3}&=2 q
+\end{align*}
+
+令 $s^3=\alpha$，于是原来的三次方程可以化为一个二次方程，最终得到
+
+\begin{equation}
+x=s+t=\sqrt[3]{q+\sqrt{q^2-p^3}}+\sqrt[3]{q-\sqrt{q^2-p^3}}
+\end{equation}
+
+此外，还可以利用公式 $\cos 3 \theta=4 \cos^3\theta-3 \cos\theta$，从而得到根可以表示为
+
+\begin{equation}
+x=2 \sqrt{p}\, C=2 \sqrt{p} \cos \theta=2 \sqrt{p} \cos \left[\frac{1}{3}(\phi+2 m \pi)\right]
+\end{equation}
+
+---
+
+### 几何证明
+
+几何地证明：若 $|z| = 1$，则
+
+\begin{equation}
+\operatorname{Im}\left[\frac{z}{(z+1)^2}\right]=0
+\end{equation}
+
+![z/(z+1)² 的几何分解](/images/complex-analysis/fig-01-unit-circle.svg)
+
+我们可以将 $\frac{z}{(z+1)^2}$ 分解为  
+$z \cdot \frac{1}{z+1} \cdot \frac{1}{z+1}$。
+
+通过观察可以发现，$z$ 的辐角是 $z+1$ 的两倍，因此可以证明该结论。 $\square$
+
+---
+
+### 定辐角轨迹
+
+从几何角度解释为什么满足
+
+\begin{equation}
+\arg \left(\frac{z-a}{z-b}\right)=\text{const.}
+\end{equation}
+
+的点 $z$ 的轨迹是一段经过固定点 $a$ 和 $b$ 的圆弧。
+
+![经过 a 和 b 的定辐角圆弧](/images/complex-analysis/fig-02-arc-locus.svg)
+
+\begin{align*}
+& \arg \left(\frac{z-a}{z-b}\right)=\text{constant} \\
+& \Rightarrow \arg (z-a)-\arg (z-b)=\text{constant}
+\end{align*}
+
+这意味着向量 $z-a$ 与 $z-b$ 之间的夹角是一个常数。 $\square$
+
+---
+
+### 等边三角形条件
+
+利用图形，求满足下列方程的点 $z$ 的轨迹
+
+\begin{equation}
+\left(\frac{b-a}{c-a}\right)=\left(\frac{a-c}{b-c}\right)
+\end{equation}
+
+![等边三角形构型](/images/complex-analysis/fig-03-equilateral.svg)
+
+可以推出
+
+\begin{equation}
+\left|\frac{b-a}{c-a}\right|=\left|\frac{a-c}{b-c}\right|
+\end{equation}
+
+同时
+
+\begin{equation}
+\arg \left(\frac{b-a}{c-a}\right)=\arg \left(\frac{a-c}{b-c}\right)
+\end{equation}
+
+于是
+
+\begin{equation}
+\angle bac=\arg (b-a)-\arg (c-a)
+\end{equation}
+
+最终得到
+
+\begin{equation}
+|b-a|=|b-c|=|c-a|
+\end{equation}
+
+即三角形 $abc$ 是 **等边三角形**。 $\square$
+
+---
+
+### 奇数倍余弦求和
+
+设
+
+\begin{equation}
+S=\cos \theta+\cos 3 \theta+\cos 5 \theta+\cdots+\cos (2 n-1) \theta
+\end{equation}
+
+证明
+
+\begin{equation}
+S=\frac{\sin 2 n \theta}{2 \sin \theta}
+\end{equation}
+
+**方法一**
+
+考虑恒等式
+
+\begin{equation}
+\sin \alpha-\sin \beta=2 \sin \frac{\alpha-\beta}{2} \cos \frac{\alpha+\beta}{2}
+\end{equation}
+
+于是
+
+\begin{equation}
+S=\frac{2\sin\theta \cdot S}{2\sin\theta}
+\end{equation}
+
+\begin{equation}
+S=\frac{2\cos\theta \sin\theta+2\cos 3\theta \sin\theta+\cdots+2\cos(2n-1)\theta \sin\theta}{2\sin\theta}
+\end{equation}
+
+\begin{equation}
+S=\frac{\sin 2\theta+(\sin 4\theta-\sin 2\theta)+\cdots+\sin 2n\theta-\sin(2n-2)\theta}{2\sin\theta}
+\end{equation}
+
+\begin{equation}
+S=\frac{\sin 2n\theta}{2\sin\theta}
+\end{equation}
+
+**方法二（几何级数）**
+
+考虑级数
+
+\begin{equation}
+e^{i \theta}+e^{i 3 \theta}+e^{i 5 \theta}+\ldots+e^{i(2 n-1) \theta}
+\end{equation}
+
+它可以写成
+
+\begin{equation}
+e^{i \theta}\left(1+e^{i 2 \theta}+e^{i 4 \theta}+\ldots+e^{i 2(n-1) \theta}\right)
+\end{equation}
+
+于是
+
+\begin{equation}
+e^{i \theta}\left(1+e^{i 2 \theta}+e^{i 4 \theta}+\ldots+e^{i 2(n-1) \theta}\right)
+= e^{i \theta}\left\{\frac{e^{i 2 n \theta}-1}{e^{i 2 \theta}-1}\right\}
+= \frac{e^{i(2 n+1) \theta}-e^{i \theta}}{e^{i 2 \theta}-1}
+\end{equation}
+
+利用公式
+
+\begin{equation}
+e^{i \theta}-e^{i \phi}=2 i \sin \left[\frac{\theta-\phi}{2}\right] e^{\frac{i(\theta+\phi)}{2}}
+\end{equation}
+
+对分子与分母进行化简，可以得到同样的结果。 $\square$

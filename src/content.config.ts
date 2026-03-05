@@ -3,7 +3,21 @@ import { defineCollection } from "astro:content";
 import { z } from "astro/zod";
 
 const blog = defineCollection({
-  loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/blog" }),
+  loader: glob({
+    pattern: "**/*.{md,mdx}",
+    base: "./src/blog",
+    generateId: ({ entry }) => {
+      // "calculus-fundamentals.en.mdx" → "calculus-fundamentals/en"
+      // "physics-basic-marginalia.zh.mdx" → "physics-basic-marginalia/zh"
+      const withoutExt = entry.replace(/\.(md|mdx)$/, "");
+      const langMatch = withoutExt.match(/\.(en|zh)$/);
+      if (langMatch) {
+        const base = withoutExt.replace(/\.(en|zh)$/, "");
+        return `${base}/${langMatch[1]}`;
+      }
+      return withoutExt;
+    },
+  }),
   schema: z.object({
     title: z.string(),
     description: z.string(),
@@ -22,7 +36,7 @@ const blog = defineCollection({
     type: z.enum(["core", "marginalia"]).default("core"),
     series: z.string().optional(),
     noteId: z.string().optional(),
-    lang: z.enum(["zh", "en"]).default("zh"),
+    lang: z.enum(["zh", "en"]).optional(),
     category: z.string().optional(),
   }),
 });

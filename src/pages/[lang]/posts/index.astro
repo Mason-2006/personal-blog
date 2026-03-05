@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "../../../layouts/BaseLayout.astro";
-import { getCollection } from "astro:content";
+import { getPostsByLang, getBaseSlug } from "../../../lib/i18n-posts";
 import type { Lang } from "../../../i18n/translations";
 import { seriesNames, seriesColors, categoryColors } from "../../../i18n/translations";
 import { t, formatDayMonth, getMonthName } from "../../../i18n/utils";
@@ -11,7 +11,7 @@ export function getStaticPaths() {
 
 const lang = Astro.params.lang as Lang;
 
-const allPosts = await getCollection("blog", ({ data }) => !data.draft);
+const allPosts = await getPostsByLang(lang);
 const sortedPosts = allPosts.sort(
   (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
 );
@@ -37,7 +37,7 @@ const searchIndex = sortedPosts.map((post) => ({
   title: post.data.title,
   description: post.data.description,
   tags: post.data.tags,
-  slug: post.id,
+  slug: getBaseSlug(post.id),
   type: post.data.type,
   series: post.data.series ? series[post.data.series] || post.data.series : "",
 }));
@@ -61,7 +61,7 @@ const shuffled = [...sortedPosts].sort(() => Math.random() - 0.5);
 const randomPicks = shuffled.slice(0, 3);
 
 // All post URLs for client-side random navigation
-const allPostUrls = sortedPosts.map((p) => `/${lang}/posts/${p.id}`);
+const allPostUrls = sortedPosts.map((p) => `/${lang}/posts/${getBaseSlug(p.id)}`);
 
 // Helper: get border color for a post
 function getPostColor(post: PostEntry): string {
@@ -147,12 +147,9 @@ function getPostColor(post: PostEntry): string {
                                 {typeLabel && !seriesLabel && (
                                   <span class="post-series">{typeLabel}</span>
                                 )}
-                                {post.data.lang !== lang && (
-                                  <span class="post-lang">{post.data.lang.toUpperCase()}</span>
-                                )}
                               </div>
                               <h4 class="post-title">
-                                <a href={`/${lang}/posts/${post.id}`}>{post.data.title}</a>
+                                <a href={`/${lang}/posts/${getBaseSlug(post.id)}`}>{post.data.title}</a>
                               </h4>
                               <p class="post-desc">{post.data.description}</p>
                             </article>
@@ -214,7 +211,7 @@ function getPostColor(post: PostEntry): string {
           <ul class="random-list">
             {randomPicks.map((post) => (
               <li>
-                <a href={`/${lang}/posts/${post.id}`} class="random-link">
+                <a href={`/${lang}/posts/${getBaseSlug(post.id)}`} class="random-link">
                   {post.data.title}
                 </a>
               </li>

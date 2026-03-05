@@ -21,6 +21,8 @@ import { switchLangPath } from "../i18n/utils";
   noteId?: string;
   category?: string;
   lang?: Lang;
+  hasTranslation?: boolean;
+  baseSlug?: string;
 }
 
 const {
@@ -35,11 +37,15 @@ const {
   series,
   noteId,
   category,
+  hasTranslation = false,
+  baseSlug,
 } = Astro.props;
 
 const lang = Astro.props.lang || getLangFromUrl(Astro.url);
 const otherLang: Lang = lang === "zh" ? "en" : "zh";
-const switchHref = switchLangPath(Astro.url.pathname, otherLang);
+const switchHref = hasTranslation && baseSlug
+  ? `/${otherLang}/posts/${baseSlug}`
+  : null;
 const seriesMap = seriesNames[lang];
 const categoryMap = categoryNames[lang];
 
@@ -49,7 +55,7 @@ const formattedUpdatedDate = updatedDate ? formatDate(updatedDate, lang) : null;
 const seriesLabel = series ? seriesMap[series] || series : null;
 const categoryLabel = category ? categoryMap[category] || category : null;
 
-const switchLabel = lang === "zh" ? "EN" : "中文";
+const switchLabel = t(lang, "lang.switch");
 ---
 
 <BaseLayout
@@ -87,21 +93,23 @@ const switchLabel = lang === "zh" ? "EN" : "中文";
         <h1 class="article-title">
           {title}
         </h1>
-        <a
-          href={switchHref}
-          class="translate-btn"
-          aria-label={`Switch to ${otherLang === "en" ? "English" : "中文"}`}
-        >
-          <svg class="translate-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M5 8l6 6" />
-            <path d="M4 14l6-6 2-3" />
-            <path d="M2 5h12" />
-            <path d="M7 2v3" />
-            <path d="M22 22l-5-10-5 10" />
-            <path d="M14 18h6" />
-          </svg>
-          {switchLabel}
-        </a>
+        {switchHref && (
+          <a
+            href={switchHref}
+            class="translate-btn"
+            aria-label={`Switch to ${otherLang === "en" ? "English" : "中文"}`}
+          >
+            <svg class="translate-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 8l6 6" />
+              <path d="M4 14l6-6 2-3" />
+              <path d="M2 5h12" />
+              <path d="M7 2v3" />
+              <path d="M22 22l-5-10-5 10" />
+              <path d="M14 18h6" />
+            </svg>
+            {switchLabel}
+          </a>
+        )}
       </div>
       
       <p class="article-desc">
