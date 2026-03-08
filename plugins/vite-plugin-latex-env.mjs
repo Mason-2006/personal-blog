@@ -74,7 +74,7 @@ function transformLatexEnvs(code) {
 export default function vitePluginLatexEnv() {
   return {
     name: 'vite-plugin-latex-env',
-    enforce: 'pre',
+    enforce: /** @type {const} */ ('pre'),
     transform(code, id) {
       if (!id.endsWith('.mdx') && !id.endsWith('.md')) return null;
       const transformed = transformLatexEnvs(code);
