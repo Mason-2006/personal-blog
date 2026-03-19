@@ -1,0 +1,371 @@
+---
+interface GraphNode {
+  id: string;
+  title: string;
+  description?: string;
+  series?: string;
+  type: "core" | "marginalia";
+}
+
+interface GraphLink {
+  source: string;
+  target: string;
+}
+
+interface GraphData {
+  nodes: GraphNode[];
+  links: GraphLink[];
+}
+
+interface Props {
+  graphData: GraphData;
+  lang: string;
+  seriesColors: Record<string, string>;
+}
+
+const { graphData, lang, seriesColors } = Astro.props;
+---
+
+<div class="graph-container" data-lang={lang}>
+  <svg></svg>
+  <div id="graph-hover-card" class="graph-hover-card" aria-hidden="true">
+    <div class="hover-title"></div>
+    <div class="hover-meta">
+      <span class="hover-badge"></span>
+      <span class="hover-type"></span>
+    </div>
+    <div class="hover-desc"></div>
+  </div>
+  <script type="application/json" id="graph-data" set:html={JSON.stringify(graphData)}></script>
+  <script type="application/json" id="series-colors" set:html={JSON.stringify(seriesColors)}></script>
+</div>
+
+<style>
+  :global(.graph-node) {
+    transition: opacity 0.3s ease;
+  }
+
+  :global(.graph-link) {
+    stroke: var(--color-accent-muted);
+    stroke-opacity: 0.35;
+    stroke-dasharray: 4 2;
+    fill: none;
+    transition: stroke-opacity 0.3s ease, stroke-width 0.3s ease, stroke-dasharray 0.3s ease;
+  }
+
+  :global(.graph-label) {
+    font-family: var(--font-display);
+    fill: var(--color-text-secondary);
+    font-size: 10px;
+    pointer-events: none;
+    text-anchor: middle;
+    opacity: 0.8;
+    transition: opacity 0.3s ease, fill 0.3s ease;
+  }
+
+  :global(.graph-dimmed) {
+    opacity: 0.12 !important;
+  }
+
+  :global(.graph-highlighted) {
+    opacity: 1 !important;
+  }
+
+  :global(.graph-highlighted circle) {
+    stroke: var(--color-text-primary);
+    stroke-width: 1.5px;
+    filter: url(#glow);
+  }
+
+  :global(.graph-highlighted text) {
+    fill: var(--color-text-primary);
+    font-weight: bold;
+    opacity: 1;
+  }
+
+  :global(.graph-link-highlighted) {
+    stroke: var(--color-accent);
+    stroke-opacity: 0.8;
+    stroke-width: 2px;
+    stroke-dasharray: none;
+  }
+
+  :global(.graph-hover-card) {
+    position: absolute;
+    z-index: 10;
+    max-width: 280px;
+    padding: 0.75rem 1rem;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    font-family: var(--font-serif);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 200ms ease, transform 200ms ease;
+  }
+
+  :global(.graph-hover-card.visible) {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  :global(.graph-hover-card .hover-title) {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 0.25rem;
+    line-height: 1.3;
+  }
+
+  :global(.graph-hover-card .hover-meta) {
+    font-size: 0.72rem;
+    color: var(--color-text-muted);
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.3rem;
+  }
+
+  :global(.graph-hover-card .hover-badge) {
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.2rem;
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    color: #fff;
+  }
+
+  :global(.graph-hover-card .hover-desc) {
+    font-size: 0.78rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    max-height: 3em;
+    overflow: hidden;
+  }
+
+  html:not(.dark) :global(.graph-hover-card) {
+    background: var(--color-light-bg-secondary);
+    border-color: var(--color-light-border);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  html:not(.dark) :global(.graph-hover-card .hover-title) {
+    color: var(--color-light-text-primary);
+  }
+
+  html:not(.dark) :global(.graph-hover-card .hover-desc) {
+    color: var(--color-light-text-secondary);
+  }
+</style>
+
+<script>
+  import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide } from 'd3-force';
+  import { select } from 'd3-selection';
+  import { zoom as d3zoom, zoomIdentity } from 'd3-zoom';
+  import { drag as d3drag } from 'd3-drag';
+
+  function initGraph() {
+    const container = document.querySelector('.graph-container') as HTMLElement | null;
+    if (!container) return;
+
+    const svgEl = container.querySelector('svg');
+    if (!svgEl) return;
+    const svg = select(svgEl);
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    const lang = container.dataset.lang;
+
+    const graphDataElement = document.getElementById('graph-data');
+    const seriesColorsElement = document.getElementById('series-colors');
+    if (!graphDataElement || !seriesColorsElement) return;
+
+    const data = JSON.parse(graphDataElement.textContent || '{"nodes":[], "links":[]}');
+    const colors = JSON.parse(seriesColorsElement.textContent || '{}');
+    const defaultColor = '#9b7b5b';
+
+    svg.selectAll('*').remove();
+
+    const defs = svg.append('defs');
+
+    const glowFilter = defs.append('filter')
+      .attr('id', 'glow')
+      .attr('x', '-50%').attr('y', '-50%')
+      .attr('width', '200%').attr('height', '200%');
+    glowFilter.append('feGaussianBlur').attr('stdDeviation', '3').attr('result', 'coloredBlur');
+    const feMerge = glowFilter.append('feMerge');
+    feMerge.append('feMergeNode').attr('in', 'coloredBlur');
+    feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
+
+    const paperFilter = defs.append('filter').attr('id', 'paper-texture');
+    paperFilter.append('feTurbulence')
+      .attr('type', 'fractalNoise').attr('baseFrequency', '0.65')
+      .attr('numOctaves', '3').attr('stitchTiles', 'stitch').attr('result', 'noise');
+    paperFilter.append('feColorMatrix')
+      .attr('type', 'saturate').attr('values', '0').attr('in', 'noise').attr('result', 'grayNoise');
+    const paperMerge = paperFilter.append('feMerge');
+    paperMerge.append('feMergeNode').attr('in', 'grayNoise');
+
+    const g = svg.append('g');
+
+    g.append('rect')
+      .attr('x', -5000).attr('y', -5000)
+      .attr('width', 10000).attr('height', 10000)
+      .attr('fill', 'transparent')
+      .attr('filter', 'url(#paper-texture)')
+      .attr('opacity', 0.03);
+
+    const zoomBehavior = d3zoom()
+      .scaleExtent([0.2, 5])
+      .on('zoom', (event: any) => { g.attr('transform', event.transform); });
+
+    svg.call(zoomBehavior as any)
+       .call(zoomBehavior.transform as any, zoomIdentity.translate(width / 2, height / 2).scale(0.8));
+
+    const simulation = forceSimulation(data.nodes)
+      .force('link', forceLink(data.links).id((d: any) => d.id).distance(150))
+      .force('charge', forceManyBody().strength(-400))
+      .force('center', forceCenter(0, 0))
+      .force('collide', forceCollide().radius(35));
+
+    const linkGroup = g.append('g').attr('class', 'links');
+    const link = linkGroup.selectAll('path')
+      .data(data.links)
+      .enter().append('path')
+      .attr('class', 'graph-link');
+
+    const nodeGroup = g.append('g').attr('class', 'nodes');
+    const node = nodeGroup.selectAll('g')
+      .data(data.nodes)
+      .enter().append('g')
+      .attr('class', 'graph-node')
+      .style('cursor', 'pointer')
+      .call(d3drag()
+        .on('start', dragstarted)
+        .on('drag', dragged)
+        .on('end', dragended) as any);
+
+    const getColor = (d: any) => d.series && colors[d.series] ? colors[d.series] : defaultColor;
+
+    node.append('path')
+      .attr('d', 'M-10,-16 Q0,-24 10,-16')
+      .attr('fill', 'none')
+      .attr('stroke', (d: any) => getColor(d))
+      .attr('stroke-width', 1.5)
+      .attr('opacity', 0.85);
+
+    node.filter((d: any) => d.type === 'core').append('circle')
+      .attr('r', 16)
+      .attr('fill', 'none')
+      .attr('stroke', (d: any) => getColor(d))
+      .attr('stroke-width', 0.5)
+      .attr('stroke-opacity', 0.25);
+
+    node.append('circle')
+      .attr('r', (d: any) => d.type === 'core' ? 12 : 7)
+      .attr('fill', (d: any) => getColor(d))
+      .attr('stroke', 'var(--color-bg-primary)')
+      .attr('stroke-width', 2);
+
+    node.append('text')
+      .attr('class', 'graph-label')
+      .attr('dy', (d: any) => d.type === 'core' ? 26 : 18)
+      .text((d: any) => d.title.length > 20 ? d.title.substring(0, 20) + '…' : d.title);
+
+    const hoverCard = document.getElementById('graph-hover-card');
+
+    node.on('click', async (_event: any, d: any) => {
+      const url = `/${lang}/posts/${d.id}`;
+      try {
+        const mod = await import('astro:transitions/client');
+        mod.navigate(url);
+      } catch {
+        window.location.href = url;
+      }
+    });
+
+    node.on('mouseenter', function(_event: any, d: any) {
+      const connectedNodeIds = new Set<string>();
+      const connectedLinkIndices = new Set<number>();
+      connectedNodeIds.add(d.id);
+
+      data.links.forEach((l: any, i: number) => {
+        if (l.source.id === d.id) { connectedNodeIds.add(l.target.id); connectedLinkIndices.add(i); }
+        else if (l.target.id === d.id) { connectedNodeIds.add(l.source.id); connectedLinkIndices.add(i); }
+      });
+
+      node.classed('graph-dimmed', (n: any) => !connectedNodeIds.has(n.id));
+      node.classed('graph-highlighted', (n: any) => connectedNodeIds.has(n.id));
+      link.classed('graph-dimmed', (_l: any, i: number) => !connectedLinkIndices.has(i));
+      link.classed('graph-link-highlighted', (_l: any, i: number) => connectedLinkIndices.has(i));
+
+      if (hoverCard) {
+        const titleEl = hoverCard.querySelector('.hover-title') as HTMLElement;
+        const badgeEl = hoverCard.querySelector('.hover-badge') as HTMLElement;
+        const typeEl = hoverCard.querySelector('.hover-type') as HTMLElement;
+        const descEl = hoverCard.querySelector('.hover-desc') as HTMLElement;
+
+        titleEl.textContent = d.title;
+        badgeEl.textContent = d.series || '';
+        badgeEl.style.backgroundColor = getColor(d);
+        badgeEl.style.display = d.series ? '' : 'none';
+        typeEl.textContent = d.type === 'core' ? 'Core Note' : 'Marginalia';
+        descEl.textContent = d.description || '';
+        descEl.style.display = d.description ? '' : 'none';
+
+        const svgRect = svgEl.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+        const transform = (svg.node() as any).__zoom || zoomIdentity;
+        const screenX = d.x * transform.k + transform.x + svgRect.left - containerRect.left;
+        const screenY = d.y * transform.k + transform.y + svgRect.top - containerRect.top;
+
+        hoverCard.style.left = `${screenX + 20}px`;
+        hoverCard.style.top = `${screenY - 10}px`;
+        hoverCard.classList.add('visible');
+      }
+    });
+
+    node.on('mouseleave', () => {
+      node.classed('graph-dimmed', false).classed('graph-highlighted', false);
+      link.classed('graph-dimmed', false).classed('graph-link-highlighted', false);
+      if (hoverCard) hoverCard.classList.remove('visible');
+    });
+
+    simulation.on('tick', () => {
+      link.attr('d', (d: any) => {
+        const dx = d.target.x - d.source.x;
+        const dy = d.target.y - d.source.y;
+        const dr = Math.sqrt(dx * dx + dy * dy) * 0.6;
+        return `M${d.source.x},${d.source.y}A${dr},${dr} 0 0,1 ${d.target.x},${d.target.y}`;
+      });
+      node.attr('transform', (d: any) => `translate(${d.x},${d.y})`);
+    });
+
+    function dragstarted(event: any, d: any) {
+      if (!event.active) simulation.alphaTarget(0.3).restart();
+      d.fx = d.x; d.fy = d.y;
+    }
+    function dragged(event: any, d: any) { d.fx = event.x; d.fy = event.y; }
+    function dragended(event: any, d: any) {
+      if (!event.active) simulation.alphaTarget(0);
+      d.fx = null; d.fy = null;
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      simulation.force('center', forceCenter(0, 0));
+      simulation.alpha(0.3).restart();
+    });
+    resizeObserver.observe(container);
+  }
+
+  document.addEventListener('astro:page-load', initGraph);
+  document.addEventListener('astro:after-swap', initGraph);
+
+  if (document.readyState === 'complete') {
+    initGraph();
+  } else {
+    document.addEventListener('DOMContentLoaded', initGraph);
+  }
+</script>

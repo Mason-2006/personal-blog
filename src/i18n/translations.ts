@@ -3,6 +3,7 @@ import { about } from "./pages/about";
 import { common } from "./pages/common";
 import { home } from "./pages/home";
 import { marginalia } from "./pages/marginalia";
+import { graph } from "./pages/graph";
 import { notes } from "./pages/notes";
 import { posts } from "./pages/posts";
 
@@ -33,6 +34,7 @@ export const translations: Record<Lang, Record<string, string>> = merge(
   posts,
   notes,
   marginalia,
+  graph,
 );
 
 export const seriesNames: Record<Lang, Record<string, string>> = {

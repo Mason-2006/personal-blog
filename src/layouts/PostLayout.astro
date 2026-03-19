@@ -1,9 +1,11 @@
 ---
 import BaseLayout from "./BaseLayout.astro";
+import WikilinkList from "../components/WikilinkList.astro";
 import type { Lang } from "../i18n/translations";
 import { seriesNames, categoryNames } from "../i18n/translations";
 import { t, formatDate, getLangFromUrl, localizedPath } from "../i18n/utils";
 import { switchLangPath } from "../i18n/utils";
+import type { WikilinkTarget } from "../lib/wikilinks";
 
   interface Props {
   title: string;
@@ -23,6 +25,9 @@ import { switchLangPath } from "../i18n/utils";
   lang?: Lang;
   hasTranslation?: boolean;
   baseSlug?: string;
+  outlinks?: WikilinkTarget[];
+  backlinks?: WikilinkTarget[];
+  previewData?: Record<string, { title: string; description: string; excerpt: string }>;
 }
 
 const {
@@ -39,6 +44,9 @@ const {
   category,
   hasTranslation = false,
   baseSlug,
+  outlinks = [],
+  backlinks = [],
+  previewData = {},
 } = Astro.props;
 
 const lang = Astro.props.lang || getLangFromUrl(Astro.url);
@@ -135,6 +143,15 @@ const switchLabel = t(lang, "lang.switch");
     <div class="prose">
       <slot />
     </div>
+
+    <WikilinkList outlinks={outlinks} backlinks={backlinks} lang={lang} />
+
+    <script type="application/json" id="wikilink-previews" set:html={JSON.stringify(previewData)}></script>
+    <div id="wikilink-preview-card" class="wikilink-preview" aria-hidden="true">
+      <div class="preview-title"></div>
+      <div class="preview-desc"></div>
+      <div class="preview-excerpt"></div>
+    </div>
     
     <footer class="mt-16 pt-8 border-t border-[var(--color-border)]">
       <div class="flex items-center justify-between">
@@ -163,6 +180,71 @@ const switchLabel = t(lang, "lang.switch");
 </BaseLayout>
 
 <script>
+  function initPreviewCards() {
+    const previewEl = document.getElementById('wikilink-previews');
+    const card = document.getElementById('wikilink-preview-card');
+    if (!previewEl || !card) return;
+
+    let previews: Record<string, { title: string; description: string; excerpt: string }>;
+    try {
+      previews = JSON.parse(previewEl.textContent || '{}');
+    } catch { return; }
+
+    let hideTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    function showCard(anchor: HTMLElement) {
+      const slug = anchor.dataset.slug;
+      if (!slug || !previews[slug]) return;
+      if (anchor.classList.contains('wikilink--broken')) return;
+
+      const p = previews[slug];
+      card!.querySelector('.preview-title')!.textContent = p.title;
+      card!.querySelector('.preview-desc')!.textContent = p.description;
+      card!.querySelector('.preview-excerpt')!.textContent = p.excerpt;
+
+      const rect = anchor.getBoundingClientRect();
+      const scrollY = window.scrollY;
+      const scrollX = window.scrollX;
+
+      let top = rect.bottom + scrollY + 8;
+      let left = rect.left + scrollX;
+
+      card!.classList.add('visible');
+
+      const cardRect = card!.getBoundingClientRect();
+      if (rect.bottom + cardRect.height + 16 > window.innerHeight) {
+        top = rect.top + scrollY - cardRect.height - 8;
+      }
+      if (left + cardRect.width > window.innerWidth - 16) {
+        left = window.innerWidth - cardRect.width - 16 + scrollX;
+      }
+
+      card!.style.top = `${top}px`;
+      card!.style.left = `${left}px`;
+    }
+
+    function hideCard() {
+      hideTimeout = setTimeout(() => {
+        card!.classList.remove('visible');
+      }, 150);
+    }
+
+    function cancelHide() {
+      if (hideTimeout) { clearTimeout(hideTimeout); hideTimeout = null; }
+    }
+
+    document.querySelectorAll<HTMLAnchorElement>('a.wikilink:not(.wikilink--broken)').forEach(a => {
+      a.addEventListener('mouseenter', () => { cancelHide(); showCard(a); });
+      a.addEventListener('mouseleave', hideCard);
+    });
+
+    card.addEventListener('mouseenter', cancelHide);
+    card.addEventListener('mouseleave', hideCard);
+  }
+
+  initPreviewCards();
+  document.addEventListener('astro:after-swap', initPreviewCards);
+
   document.getElementById("scroll-to-top")?.addEventListener("click", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });

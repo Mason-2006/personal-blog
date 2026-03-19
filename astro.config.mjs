@@ -4,6 +4,8 @@ import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import remarkMath from 'remark-math';
 import rehypeMathjax from 'rehype-mathjax';
+import remarkWikilinks from './plugins/remark-wikilinks.mjs';
+import rehypeWikilinks from './plugins/rehype-wikilinks.mjs';
 import vitePluginLatexEnv from './plugins/vite-plugin-latex-env.mjs';
 // https://astro.build/config
 export default defineConfig({
@@ -23,7 +25,7 @@ export default defineConfig({
     plugins: [vitePluginLatexEnv(), tailwindcss()],
   },
   markdown: {
-    remarkPlugins: [remarkMath],
+    remarkPlugins: [remarkMath, remarkWikilinks],
     rehypePlugins: [
       [rehypeMathjax, {
         tex: {
@@ -32,6 +34,7 @@ export default defineConfig({
           displayMath: [['$$', '$$'], ['\\[', '\\]']],
         },
       }],
+      rehypeWikilinks,
     ],
     shikiConfig: {
       theme: 'rose-pine',

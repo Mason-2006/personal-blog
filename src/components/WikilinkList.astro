@@ -1,0 +1,51 @@
+---
+import type { Lang } from "../i18n/translations";
+import { t } from "../i18n/utils";
+import type { WikilinkTarget } from "../lib/wikilinks";
+
+interface Props {
+  outlinks: WikilinkTarget[];
+  backlinks: WikilinkTarget[];
+  lang: Lang;
+}
+
+const { outlinks, backlinks, lang } = Astro.props;
+const hasOutlinks = outlinks.length > 0;
+const hasBacklinks = backlinks.length > 0;
+const hasAny = hasOutlinks || hasBacklinks;
+---
+
+{hasAny && (
+  <div class="wikilink-section">
+    {hasOutlinks && (
+      <div class="wikilink-subsection">
+        <h3 class="wikilink-subheading">{t(lang, "wikilinks.outlinks")}</h3>
+        <ul class="wikilink-list">
+          {outlinks.map((link) => (
+            <li>
+              {link.exists ? (
+                <a href={`/${lang}/posts/${link.slug}`}>{link.title}</a>
+              ) : (
+                <span class="wikilink-broken" title={t(lang, "wikilinks.brokenLink")}>
+                  {link.title}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+    {hasBacklinks && (
+      <div class="wikilink-subsection">
+        <h3 class="wikilink-subheading">{t(lang, "wikilinks.backlinks")}</h3>
+        <ul class="wikilink-list">
+          {backlinks.map((link) => (
+            <li>
+              <a href={`/${lang}/posts/${link.slug}`}>{link.title}</a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+  </div>
+)}

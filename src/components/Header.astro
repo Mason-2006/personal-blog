@@ -14,6 +14,7 @@ const lang = Astro.props.lang || getLangFromUrl(Astro.url);
 const navLinks = [
   { href: localizedPath(lang, "/"), label: t(lang, "nav.home") },
   { href: localizedPath(lang, "/notes"), label: t(lang, "nav.notes") },
+  { href: localizedPath(lang, "/graph"), label: t(lang, "nav.graph") },
   { href: localizedPath(lang, "/marginalia"), label: t(lang, "nav.marginalia") },
   { href: localizedPath(lang, "/about"), label: t(lang, "nav.about") },
 ];

@@ -1,0 +1,75 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import GraphVisualization from "../../components/GraphVisualization.astro";
+import type { Lang } from "../../i18n/translations";
+import { seriesColors } from "../../i18n/translations";
+import { t } from "../../i18n/utils";
+import { buildWikilinkData } from "../../lib/wikilinks";
+
+export function getStaticPaths() {
+  return [{ params: { lang: "zh" } }, { params: { lang: "en" } }];
+}
+
+const lang = Astro.params.lang as Lang;
+const { graph } = await buildWikilinkData(lang);
+---
+
+<BaseLayout title={t(lang, "graph.title")} description={t(lang, "graph.subtitle")} lang={lang}>
+  <section class="container-narrow py-12 md:py-16">
+    <header class="mb-8">
+      <h1 class="page-heading">{t(lang, "graph.title")}</h1>
+      <p class="page-subtitle">{t(lang, "graph.subtitle")}</p>
+    </header>
+
+    {graph.nodes.length > 0 ? (
+      <GraphVisualization graphData={graph} lang={lang} seriesColors={seriesColors} />
+    ) : (
+      <p class="empty-state">{t(lang, "graph.noData")}</p>
+    )}
+  </section>
+</BaseLayout>
+
+<style>
+  .page-heading {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 0.4rem;
+    letter-spacing: 0.01em;
+  }
+
+  html:not(.dark) .page-heading {
+    color: var(--color-light-text-primary);
+  }
+
+  @media (min-width: 768px) {
+    .page-heading {
+      font-size: 2.25rem;
+    }
+  }
+
+  .page-subtitle {
+    font-family: var(--font-serif);
+    color: var(--color-text-secondary);
+    font-size: 1.05rem;
+    font-style: italic;
+    max-width: 50ch;
+  }
+
+  html:not(.dark) .page-subtitle {
+    color: var(--color-light-text-secondary);
+  }
+
+  .empty-state {
+    font-family: var(--font-serif);
+    font-style: italic;
+    color: var(--color-text-muted);
+    text-align: center;
+    padding: 4rem 0;
+  }
+
+  html:not(.dark) .empty-state {
+    color: var(--color-light-text-muted);
+  }
+</style>

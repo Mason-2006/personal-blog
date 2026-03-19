@@ -3,6 +3,8 @@ import { render } from "astro:content";
 import PostLayout from "../../../layouts/PostLayout.astro";
 import type { Lang } from "../../../i18n/translations";
 import { buildTranslationMap, getBaseSlug } from "../../../lib/i18n-posts";
+import { buildWikilinkData } from "../../../lib/wikilinks";
+import type { PreviewData } from "../../../lib/wikilinks";
 
 export async function getStaticPaths() {
   const translationMap = await buildTranslationMap();
@@ -24,6 +26,20 @@ export async function getStaticPaths() {
 
 const { post, lang, hasTranslation, baseSlug } = Astro.props;
 const { Content } = await render(post);
+
+const { wikilinks, previews } = await buildWikilinkData(lang as Lang);
+const outlinks = wikilinks.outlinks.get(baseSlug) || [];
+const backlinks = wikilinks.backlinks.get(baseSlug) || [];
+
+const referencedSlugs = new Set([
+  ...outlinks.map(l => l.slug),
+  ...backlinks.map(l => l.slug),
+]);
+const previewData: Record<string, { title: string; description: string; excerpt: string }> = {};
+for (const slug of referencedSlugs) {
+  const p = previews.get(slug);
+  if (p) previewData[slug] = p;
+}
 ---
 
 <PostLayout
@@ -41,6 +57,9 @@ const { Content } = await render(post);
   lang={lang as Lang}
   hasTranslation={hasTranslation}
   baseSlug={baseSlug}
+  outlinks={outlinks}
+  backlinks={backlinks}
+  previewData={previewData}
 >
   <Content />
 </PostLayout>

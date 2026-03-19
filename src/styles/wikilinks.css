@@ -1,0 +1,260 @@
+.prose a.wikilink {
+  color: var(--color-accent);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--color-accent-muted);
+  transition: border-color 200ms ease, color 200ms ease;
+}
+
+.prose a.wikilink:hover {
+  border-bottom-style: solid;
+  color: var(--color-accent-hover);
+}
+
+.prose a.wikilink--broken {
+  color: var(--color-text-muted);
+  border-bottom: 1px dashed rgba(180, 80, 80, 0.4);
+  pointer-events: none;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+html:not(.dark) .prose a.wikilink--broken {
+  color: var(--color-light-text-muted);
+  border-bottom-color: rgba(160, 60, 60, 0.3);
+}
+
+.wikilink-section {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--color-border);
+}
+
+html:not(.dark) .wikilink-section {
+  border-top-color: var(--color-light-border);
+}
+
+.wikilink-section-heading {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-accent);
+  margin-bottom: 0.75rem;
+}
+
+.wikilink-subsection {
+  margin-bottom: 1.5rem;
+}
+
+.wikilink-subsection:last-child {
+  margin-bottom: 0;
+}
+
+.wikilink-subheading {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  margin-bottom: 0.5rem;
+}
+
+html:not(.dark) .wikilink-subheading {
+  color: var(--color-light-text-muted);
+}
+
+.wikilink-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+}
+
+.wikilink-list a {
+  font-family: var(--font-serif);
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-border);
+  transition: color 200ms ease, border-color 200ms ease;
+}
+
+.wikilink-list a:hover {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+
+html:not(.dark) .wikilink-list a {
+  color: var(--color-light-text-secondary);
+  border-bottom-color: var(--color-light-border);
+}
+
+html:not(.dark) .wikilink-list a:hover {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+
+.wikilink-list .wikilink-broken {
+  color: var(--color-text-muted);
+  border-bottom-style: dashed;
+  border-bottom-color: rgba(180, 80, 80, 0.3);
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.wikilink-empty {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+html:not(.dark) .wikilink-empty {
+  color: var(--color-light-text-muted);
+}
+
+.graph-container {
+  width: 100%;
+  height: calc(100vh - 12rem);
+  min-height: 500px;
+  position: relative;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: radial-gradient(
+    ellipse at center,
+    var(--color-bg-secondary) 0%,
+    var(--color-bg-primary) 70%
+  );
+}
+
+html:not(.dark) .graph-container {
+  border-color: var(--color-light-border);
+  background: radial-gradient(
+    ellipse at center,
+    var(--color-light-bg-secondary) 0%,
+    var(--color-light-bg-primary) 70%
+  );
+}
+
+.graph-container svg {
+  width: 100%;
+  height: 100%;
+}
+
+.graph-node {
+  cursor: pointer;
+  transition: filter 200ms ease;
+}
+
+.graph-node:hover {
+  filter: drop-shadow(0 0 6px var(--color-accent));
+}
+
+.graph-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  fill: var(--color-text-secondary);
+  pointer-events: none;
+  user-select: none;
+}
+
+html:not(.dark) .graph-label {
+  fill: var(--color-light-text-secondary);
+}
+
+.graph-link {
+  stroke: var(--color-accent-muted);
+  stroke-opacity: 0.4;
+  fill: none;
+}
+
+.graph-dimmed {
+  opacity: 0.1;
+  transition: opacity 200ms ease;
+}
+
+.graph-highlighted {
+  opacity: 1;
+  transition: opacity 200ms ease;
+}
+
+.graph-link-highlighted {
+  stroke: var(--color-accent);
+  stroke-opacity: 0.8;
+}
+
+.wikilink-preview {
+  position: absolute;
+  z-index: 50;
+  max-width: 320px;
+  padding: 0.75rem 1rem;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  font-family: var(--font-serif);
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 200ms ease, transform 200ms ease;
+  visibility: hidden;
+}
+
+.wikilink-preview.visible {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+}
+
+html:not(.dark) .wikilink-preview {
+  background: var(--color-light-bg-secondary);
+  border-color: var(--color-light-border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.wikilink-preview .preview-title {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin-bottom: 0.3rem;
+  line-height: 1.3;
+}
+
+html:not(.dark) .wikilink-preview .preview-title {
+  color: var(--color-light-text-primary);
+}
+
+.wikilink-preview .preview-desc {
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 0.3rem;
+}
+
+html:not(.dark) .wikilink-preview .preview-desc {
+  color: var(--color-light-text-secondary);
+}
+
+.wikilink-preview .preview-excerpt {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  font-style: italic;
+  max-height: 3.5em;
+  overflow: hidden;
+}
+
+html:not(.dark) .wikilink-preview .preview-excerpt {
+  color: var(--color-light-text-muted);
+}
+
+@media (hover: none) {
+  .wikilink-preview {
+    display: none;
+  }
+}
